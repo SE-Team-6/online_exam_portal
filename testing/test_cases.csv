@@ -1,0 +1,12 @@
+
+Test Case ID,Feature,Test Scenario,Expected Result,Actual Result,Status
+TC-01,Student Login,Login with valid credentials,Student logs in successfully,Not executed,Not Tested
+TC-02,Student Login,Login with invalid password,Error message is displayed,Not executed,Not Tested
+TC-03,Student Registration,Register with valid details,Student account is created,Not executed,Not Tested
+TC-04,Exam Selection,View available examinations,Available exams are displayed,Not executed,Not Tested
+TC-05,Question Display,Start an examination,Questions and options are displayed,Not executed,Not Tested
+TC-06,Exam Timer,Start an examination,Countdown timer works correctly,Not executed,Not Tested
+TC-07,Answer Saving,Select an answer,Selected answer is saved,Not executed,Not Tested
+TC-08,Exam Submission,Submit an examination,Answers are submitted successfully,Not executed,Not Tested
+TC-09,Automatic Evaluation,Submit known answers,Score is calculated correctly,Not executed,Not Tested
+TC-10,Result Generation,Complete an examination,Correct result is displayed,Not executed,Not Tested

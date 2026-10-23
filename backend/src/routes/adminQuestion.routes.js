@@ -11,7 +11,6 @@ import {
 // Change this import to the actual path/export from Arvind's #2 auth middleware.
 import {requireAuth} from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { requireRole } from "../middleware/requireRole.js";
 
 const router = express.Router();
 

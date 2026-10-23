@@ -1,8 +1,15 @@
-
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
+import QuestionBank from "./pages/QuestionBank";
 
 function Login() {
   const navigate = useNavigate();
@@ -29,7 +36,6 @@ function Login() {
         throw new Error("The server response is missing a valid token or role.");
       }
 
-      // Store the token for this browser session only.
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", role);
 
@@ -170,11 +176,22 @@ function Register() {
 }
 
 function Student() {
-  return <main><h1>Student Dashboard</h1></main>;
+  return (
+    <main>
+      <h1>Student Dashboard</h1>
+    </main>
+  );
 }
 
 function Admin() {
-  return <main><h1>Admin Dashboard</h1></main>;
+  return (
+    <main>
+      <h1>Admin Dashboard</h1>
+      <p>
+        <Link to="/question-bank">Manage Question Bank</Link>
+      </p>
+    </main>
+  );
 }
 
 function App() {
@@ -184,6 +201,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/student"
           element={
@@ -192,6 +210,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin"
           element={
@@ -200,6 +219,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/question-bank"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <QuestionBank />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

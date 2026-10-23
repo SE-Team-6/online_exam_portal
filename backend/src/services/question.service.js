@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Question from "../models/Question.js";
+import Question from "../models/Questions.js";
 
 function apiError(statusCode, code, message) {
   const error = new Error(message);

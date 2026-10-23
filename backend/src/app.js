@@ -10,8 +10,9 @@ app.disable("x-powered-by");
 app.use(requestIdMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use("/api/health", healthRouter);
+app.use("/api/admin/questions", adminQuestionRoutes);
+
 app.use(notFoundHandler);
 app.use(errorHandler);
-app.use("/api/admin/questions", adminQuestionRoutes);
 
 export default app;

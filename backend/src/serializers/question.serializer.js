@@ -13,3 +13,4 @@ export function serializeUser(user) {
   delete result.passwordHash;
   return result;
 }
+

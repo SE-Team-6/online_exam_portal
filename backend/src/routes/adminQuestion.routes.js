@@ -11,12 +11,19 @@ import {
 // Change this import to the actual path/export from Arvind's #2 auth middleware.
 import {requireAuth} from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
+import { requireRole } from "../middleware/requireRole.js";
 
 const router = express.Router();
 
 // #7 requires a valid login. #6 will add the instructor/admin role restriction.
 router.use(requireAuth);
 router.use(requireRole("instructor", "admin"));
+
+const questions = await Question.find({ _id: { $in: questionIds } });
+
+res.status(200).json({
+  questions: questions.map(serializeQuestionForStudent),
+});
 
 router.get(
   "/",

@@ -18,11 +18,6 @@ const router = express.Router();
 router.use(requireAuth);
 router.use(requireRole("instructor", "admin"));
 
-const questions = await Question.find({ _id: { $in: questionIds } });
-
-res.status(200).json({
-  questions: questions.map(serializeQuestionForStudent),
-});
 
 router.get(
   "/",

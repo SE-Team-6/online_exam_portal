@@ -61,20 +61,28 @@
 These results are based on the local `npm test` run. The backend tests verify the implemented health endpoint and basic HTTP error-handling behavior.
 
 
+## 4. Postman Testing Results
 
-\## 4. Postman Testing Status
+The Postman collection was executed locally against the backend running on port 3000.
 
+| Test ID | Test description | Expected status | Actual status | Result |
+|---|---|---|---|---|
+| TC-01 | Health endpoint returns HTTP 200 | 200 | 200 | PASS |
+| TC-02 | Unknown route returns 404 | 404 | 404 | PASS |
+| TC-03 | Unsupported HTTP method returns 404 | 404 | 404 | PASS |
+| TC-04 | Malformed JSON returns HTTP 400 | 400 | 400 | PASS |
+| TC-05 | Health endpoint returns JSON content type | JSON content type | JSON content type | PASS |
 
+**Postman execution summary:**
+- Total tests executed: 5
+- Passed: 5
+- Failed: 0
+- Errors: 0
+- Overall result: PASS
 
-The Postman collection is being prepared for the currently implemented API routes.
+Student registration testing remains pending until the registration endpoint is implemented and available.
 
-
-
-\- Postman collection execution: Pending
-
-\- Student registration testing: Pending until the registration endpoint is implemented and available
-
-\- Exam creation, submission, and result testing: Pending until the corresponding endpoints are available
+Exam creation, submission, and result testing remain pending until the corresponding endpoints are available.
 
 
 
@@ -85,10 +93,10 @@ The Postman collection is being prepared for the currently implemented API route
 No failures were reported in the six automated backend tests. This does not mean the entire application is defect-free. Further functional testing is required when the remaining features become available.
 
 
+## 6. Evidence
 
-\## 6. Evidence
+- Terminal output showing six passing automated backend tests.
+- Postman Runner screenshot showing five passing tests, zero failures, and zero errors.
 
-
-
-Attach screenshots of the terminal output showing the six passing automated tests and the Postman test results after execution.
+The screenshots document the actual local test executions performed on 26 October 2026.
 

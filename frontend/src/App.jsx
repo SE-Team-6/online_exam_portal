@@ -1,3 +1,5 @@
+
+import ExamManagement from "./pages/ExamManagement";
 import { useState } from "react";
 import {
   BrowserRouter,
@@ -190,6 +192,9 @@ function Admin() {
       <p>
         <Link to="/question-bank">Manage Question Bank</Link>
       </p>
+      <p>
+        <Link to="/admin/exams">Manage Exams</Link>
+      </p>
     </main>
   );
 }
@@ -225,6 +230,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin", "instructor"]}>
               <QuestionBank />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/exams"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <ExamManagement />
             </ProtectedRoute>
           }
         />

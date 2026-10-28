@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   BrowserRouter,
@@ -10,6 +11,7 @@ import {
 import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import Results from "./pages/Results";
 
 function Login() {
   const navigate = useNavigate();
@@ -179,6 +181,9 @@ function Student() {
   return (
     <main>
       <h1>Student Dashboard</h1>
+      <p>
+        <Link to="/results">View Exam Results</Link>
+      </p>
     </main>
   );
 }
@@ -207,6 +212,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["student"]}>
               <Student />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/results"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Results />
             </ProtectedRoute>
           }
         />

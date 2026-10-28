@@ -6,7 +6,6 @@ function ExamManagement() {
   const [questions, setQuestions] = useState([]);
   const [exams, setExams] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -67,6 +66,11 @@ function ExamManagement() {
     setError("");
     setNotice("");
 
+    if (!form.title.trim()) {
+      setError("Enter an exam title.");
+      return;
+    }
+
     if (form.questionIds.length === 0) {
       setError("Select at least one question for the exam.");
       return;
@@ -81,12 +85,12 @@ function ExamManagement() {
 
     const duration = Number(form.durationMinutes);
 
-    if (!Number.isInteger(duration) || duration < 1) {
-      setError("Duration must be at least 1 minute.");
+    if (!Number.isInteger(duration) || duration < 1 || duration > 600) {
+      setError("Duration must be between 1 and 600 minutes.");
       return;
     }
 
-    // Temporary preview only. Exam scheduling API is not yet confirmed.
+    // Temporary preview only; the exam scheduling API is not confirmed.
     const exam = {
       id: crypto.randomUUID(),
       title: form.title.trim(),
@@ -94,11 +98,6 @@ function ExamManagement() {
       durationMinutes: duration,
       questionIds: [...form.questionIds],
     };
-
-    if (!exam.title) {
-      setError("Enter an exam title.");
-      return;
-    }
 
     setExams((current) => [...current, exam]);
     setForm({
@@ -156,9 +155,6 @@ function ExamManagement() {
             type="datetime-local"
             value={form.startAt}
             onChange={handleChange}
-            min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-              .toISOString()
-              .slice(0, 16)}
             required
           />
 
@@ -183,16 +179,19 @@ function ExamManagement() {
           ) : (
             <div className="exam-question-list">
               {questions.map((question) => {
-                const id = question._id ?? question.id ?? question.questionId;
+                const id =
+                  question._id ?? question.id ?? question.questionId;
 
                 if (!id) return null;
 
+                const questionId = String(id);
+
                 return (
-                  <label className="exam-question-option" key={id}>
+                  <label className="exam-question-option" key={questionId}>
                     <input
                       type="checkbox"
-                      checked={form.questionIds.includes(String(id))}
-                      onChange={() => toggleQuestion(String(id))}
+                      checked={form.questionIds.includes(questionId)}
+                      onChange={() => toggleQuestion(questionId)}
                     />
                     <span>
                       <strong>{question.stem}</strong>
@@ -212,8 +211,8 @@ function ExamManagement() {
             Selected questions: <strong>{form.questionIds.length}</strong>
           </p>
 
-          <button type="submit" disabled={saving || loadingQuestions}>
-            {saving ? "Scheduling..." : "Add exam to preview"}
+          <button type="submit" disabled={loadingQuestions}>
+            Add exam to preview
           </button>
         </form>
       </section>

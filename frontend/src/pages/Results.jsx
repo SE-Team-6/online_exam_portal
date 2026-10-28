@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { apiRequest } from "../services/api";
 
 function Results() {
-  const [result, setResult] = useState(null);
+  const [result] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 

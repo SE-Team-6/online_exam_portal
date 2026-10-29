@@ -169,20 +169,20 @@ function StudentExam() {
         <h2 id="question-navigator-heading">Question Navigator</h2>
 
         <div className="question-navigator">
-          {questions.map((question, index) => (
+          {questions.map((item, index) => (
             <button
-              key={question.id}
+              key={item.id}
               type="button"
               disabled={submitted}
               onClick={() => setCurrentIndex(index)}
               aria-current={index === currentIndex ? "step" : undefined}
               aria-label={`Go to question ${index + 1}. ${
-                answers[question.id] ? "Answered" : "Unanswered"
+                answers[item.id] ? "Answered" : "Unanswered"
               }${index === currentIndex ? ". Current question" : ""}`}
             >
               {index + 1}
               {" - "}
-              {answers[question.id] ? "Answered" : "Unanswered"}
+              {answers[item.id] ? "Answered" : "Unanswered"}
             </button>
           ))}
         </div>
@@ -210,8 +210,7 @@ function StudentExam() {
                   onChange={() =>
                     selectAnswer(currentQuestion.id, option)
                   }
-                />
-                {" "}
+                />{" "}
                 {option}
               </label>
             ))}

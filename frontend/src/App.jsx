@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   BrowserRouter,
@@ -10,6 +11,7 @@ import {
 import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import InstructorResults from "./pages/InstructorResults";
 
 function Login() {
   const navigate = useNavigate();
@@ -39,7 +41,9 @@ function Login() {
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", role);
 
-      navigate(role === "student" ? "/student" : "/admin", { replace: true });
+      navigate(role === "student" ? "/student" : "/admin", {
+        replace: true,
+      });
     } catch (err) {
       if (err.status === 401) {
         setError("Invalid email or password. Please try again.");
@@ -190,6 +194,9 @@ function Admin() {
       <p>
         <Link to="/question-bank">Manage Question Bank</Link>
       </p>
+      <p>
+        <Link to="/instructor-results">View Instructor Results &amp; Analytics</Link>
+      </p>
     </main>
   );
 }
@@ -225,6 +232,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin", "instructor"]}>
               <QuestionBank />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/instructor-results"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <InstructorResults />
             </ProtectedRoute>
           }
         />

@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node --test",
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "lint": "node --check src/app.js && node --check src/server.js",
+    "seed": "node scripts/seed.js"
   },
   "keywords": [],
   "author": "",

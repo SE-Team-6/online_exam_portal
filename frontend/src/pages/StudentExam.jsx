@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const sampleQuestions = [
   {
@@ -33,6 +33,10 @@ function StudentExam() {
   const [message, setMessage] = useState("");
   const [showSubmitWarning, setShowSubmitWarning] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const submitButtonRef = useRef(null);
+  const cancelButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   useEffect(() => {
     const expiresAt = sessionStorage.getItem("expiresAt");
@@ -72,6 +76,15 @@ function StudentExam() {
     return () => clearInterval(timerId);
   }, []);
 
+  useEffect(() => {
+    if (showSubmitWarning) {
+      cancelButtonRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showSubmitWarning]);
+
   function selectAnswer(questionId, option) {
     if (submitted) return;
 
@@ -84,16 +97,51 @@ function StudentExam() {
     setMessage("Answer changed. Backend save API is not connected yet.");
   }
 
+  function openSubmitWarning(event) {
+    previousFocusRef.current = event.currentTarget;
+    setShowSubmitWarning(true);
+  }
+
+  function cancelSubmit() {
+    setShowSubmitWarning(false);
+  }
+
   function handleSubmit() {
     setSubmitted(true);
     setShowSubmitWarning(false);
     setMessage("Submission UI complete. Connect the backend submit API.");
   }
 
+  function handleDialogKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelSubmit();
+      return;
+    }
+
+    if (event.key === "Tab") {
+      const firstButton = cancelButtonRef.current;
+      const lastButton = submitButtonRef.current;
+
+      if (!firstButton || !lastButton) return;
+
+      if (event.shiftKey && document.activeElement === firstButton) {
+        event.preventDefault();
+        lastButton.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === lastButton
+      ) {
+        event.preventDefault();
+        firstButton.focus();
+      }
+    }
+  }
+
   const currentQuestion = questions[currentIndex];
 
   return (
-    <main>
+    <main className="student-exam">
       <h1>Student Exam</h1>
 
       <p>
@@ -107,18 +155,18 @@ function StudentExam() {
         </span>
       </p>
 
-      <p role="status" aria-live="polite">
+      <p role="status" aria-live="polite" aria-atomic="true">
         Save status: {saveStatus}
       </p>
 
       {message && (
-        <p role="status" aria-live="polite">
+        <p role="status" aria-live="polite" aria-atomic="true">
           {message}
         </p>
       )}
 
-      <section aria-label="Question navigator">
-        <h2>Question Navigator</h2>
+      <section aria-labelledby="question-navigator-heading">
+        <h2 id="question-navigator-heading">Question Navigator</h2>
 
         <div className="question-navigator">
           {questions.map((question, index) => (
@@ -128,11 +176,12 @@ function StudentExam() {
               disabled={submitted}
               onClick={() => setCurrentIndex(index)}
               aria-current={index === currentIndex ? "step" : undefined}
-              aria-label={`Question ${index + 1}, ${
-                answers[question.id] ? "answered" : "unanswered"
-              }${index === currentIndex ? ", current question" : ""}`}
+              aria-label={`Go to question ${index + 1}. ${
+                answers[question.id] ? "Answered" : "Unanswered"
+              }${index === currentIndex ? ". Current question" : ""}`}
             >
-              {index + 1} -{" "}
+              {index + 1}
+              {" - "}
               {answers[question.id] ? "Answered" : "Unanswered"}
             </button>
           ))}
@@ -141,14 +190,14 @@ function StudentExam() {
 
       {currentQuestion && (
         <section aria-labelledby="current-question-heading">
-          <h2 id="current-question-heading">
+          <h2 id="current-question-heading" tabIndex={-1}>
             Question {currentIndex + 1} of {questions.length}
           </h2>
 
           <fieldset disabled={submitted}>
             <legend>{currentQuestion.text}</legend>
 
-            {currentQuestion.options.map((option, index) => (
+            {currentQuestion.options.map((option) => (
               <label
                 key={option}
                 style={{ display: "block", margin: "12px 0" }}
@@ -162,7 +211,8 @@ function StudentExam() {
                     selectAnswer(currentQuestion.id, option)
                   }
                 />
-                {" "}{option}
+                {" "}
+                {option}
               </label>
             ))}
           </fieldset>
@@ -171,31 +221,24 @@ function StudentExam() {
             <button
               type="button"
               disabled={currentIndex === 0 || submitted}
-              onClick={() =>
-                setCurrentIndex((index) => index - 1)
-              }
+              onClick={() => setCurrentIndex((index) => index - 1)}
             >
-              Previous
+              Previous question
             </button>
 
             <button
               type="button"
               disabled={currentIndex === questions.length - 1 || submitted}
-              onClick={() =>
-                setCurrentIndex((index) => index + 1)
-              }
+              onClick={() => setCurrentIndex((index) => index + 1)}
             >
-              Next
+              Next question
             </button>
           </div>
         </section>
       )}
 
       {!submitted && (
-        <button
-          type="button"
-          onClick={() => setShowSubmitWarning(true)}
-        >
+        <button type="button" onClick={openSubmitWarning}>
           Submit Exam
         </button>
       )}
@@ -203,23 +246,31 @@ function StudentExam() {
       {showSubmitWarning && !submitted && (
         <section
           role="alertdialog"
+          aria-modal="true"
           aria-labelledby="submit-warning-heading"
           aria-describedby="submit-warning-description"
+          onKeyDown={handleDialogKeyDown}
         >
           <h2 id="submit-warning-heading">Confirm submission</h2>
+
           <p id="submit-warning-description">
             Are you sure you want to submit your exam?
           </p>
 
-          <button type="button" onClick={handleSubmit}>
+          <button
+            ref={submitButtonRef}
+            type="button"
+            onClick={handleSubmit}
+          >
             Yes, submit
           </button>
 
           <button
+            ref={cancelButtonRef}
             type="button"
-            onClick={() => setShowSubmitWarning(false)}
+            onClick={cancelSubmit}
           >
-            Cancel
+            Cancel submission
           </button>
         </section>
       )}

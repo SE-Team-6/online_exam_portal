@@ -1,3 +1,4 @@
+
 /* Question Bank page */
 .question-bank {
   max-width: 900px;
@@ -124,5 +125,397 @@
 
   .question-bank form {
     padding: 18px;
+  }
+}
+
+.exam-management {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  color: #1f2937;
+}
+
+.exam-management header {
+  margin-bottom: 28px;
+}
+
+.exam-management h1 {
+  margin-bottom: 8px;
+  font-size: 30px;
+}
+
+.exam-management header p {
+  color: #6b7280;
+}
+
+.exam-panel {
+  margin-bottom: 28px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.exam-panel h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.exam-management form {
+  display: grid;
+  gap: 12px;
+}
+
+.exam-management input:not([type="checkbox"]),
+.exam-management select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.exam-management input:focus,
+.exam-management select:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #2563eb;
+}
+
+.exam-management button {
+  width: fit-content;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exam-management button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exam-question-list {
+  display: grid;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.exam-question-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.exam-question-option input {
+  margin-top: 4px;
+}
+
+.exam-question-option span {
+  display: grid;
+  gap: 6px;
+}
+
+.exam-question-option small {
+  color: #6b7280;
+}
+
+.exam-table-wrapper {
+  overflow-x: auto;
+}
+
+.exam-management table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.exam-management th,
+.exam-management td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.exam-management th {
+  background: #f9fafb;
+}
+
+.exam-message {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.exam-error {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.exam-notice {
+  color: #166534;
+  background: #dcfce7;
+}
+
+@media (max-width: 640px) {
+  .exam-management {
+    padding: 20px 12px;
+  }
+
+  .exam-panel {
+    padding: 16px;
+  }
+}
+
+/* Accessibility: visible keyboard focus */
+:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 3px;
+}
+
+/* Accessibility: high-contrast mode */
+.high-contrast {
+  background: #000000 !important;
+  color: #ffffff !important;
+  color-scheme: dark;
+}
+
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast p,
+.high-contrast label,
+.high-contrast span,
+.high-contrast small,
+.high-contrast th,
+.high-contrast td,
+.high-contrast legend {
+  color: #ffffff !important;
+}
+
+.high-contrast main,
+.high-contrast section,
+.high-contrast form,
+.high-contrast .question-bank,
+.high-contrast .question-bank form,
+.high-contrast .question-card,
+.high-contrast .exam-management,
+.high-contrast .exam-panel,
+.high-contrast .exam-question-option {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast input::placeholder,
+.high-contrast textarea::placeholder {
+  color: #dddddd !important;
+}
+
+.high-contrast button {
+  background: #ffff00 !important;
+  color: #000000 !important;
+  border: 2px solid #ffff00 !important;
+  font-weight: 700;
+}
+
+.high-contrast a {
+  color: #ffff00 !important;
+  text-decoration: underline;
+}
+
+.high-contrast .question-card p span {
+  background: #000000 !important;
+  color: #ffff00 !important;
+  border: 1px solid #ffff00;
+}
+
+.high-contrast .exam-error {
+  background: #000000 !important;
+  color: #ff8080 !important;
+  border: 2px solid #ff8080;
+}
+
+.high-contrast .exam-notice {
+  background: #000000 !important;
+  color: #ffff00 !important;
+  border: 2px solid #ffff00;
+}
+
+.high-contrast :focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+
+/* Modern Login and Registration pages */
+
+main:not(.question-bank):not(.exam-management) {
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 32px));
+  margin: 55px auto;
+  padding: 36px;
+  background: #ffffff;
+  color: #172033;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.09);
+  font-family: Arial, sans-serif;
+}
+
+main:not(.question-bank):not(.exam-management) h1 {
+  margin: 0 0 28px;
+  color: #172554;
+  font-size: 30px;
+  text-align: center;
+}
+
+main:not(.question-bank):not(.exam-management) form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main:not(.question-bank):not(.exam-management) label {
+  margin-top: 8px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+main:not(.question-bank):not(.exam-management) input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+}
+
+main:not(.question-bank):not(.exam-management) input:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+  border-color: #2563eb;
+}
+
+main:not(.question-bank):not(.exam-management) button {
+  min-height: 44px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+main:not(.question-bank):not(.exam-management) form button[type="submit"] {
+  width: 100%;
+  margin-top: 14px;
+}
+
+main:not(.question-bank):not(.exam-management) button:hover {
+  background: #1d4ed8;
+}
+
+main:not(.question-bank):not(.exam-management) button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+main:not(.question-bank):not(.exam-management) > p {
+  margin: 22px 0 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+main:not(.question-bank):not(.exam-management) a {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+main:not(.question-bank):not(.exam-management) a:hover {
+  text-decoration: underline;
+}
+
+main:not(.question-bank):not(.exam-management) [role="alert"] {
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+main:not(.question-bank):not(.exam-management) [role="status"] {
+  color: #166534;
+  font-size: 14px;
+}
+
+/* App background */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+/* High-contrast toggle button */
+#root > div > button {
+  display: block;
+  margin: 16px auto -35px;
+  padding: 9px 14px;
+  border: 2px solid #1e40af;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e40af;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#root > div > button:hover {
+  background: #dbeafe;
+}
+
+/* Keep the login card accessible in high-contrast mode */
+.high-contrast main:not(.question-bank):not(.exam-management) {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast main:not(.question-bank):not(.exam-management) h1,
+.high-contrast main:not(.question-bank):not(.exam-management) label,
+.high-contrast main:not(.question-bank):not(.exam-management) > p {
+  color: #ffffff !important;
+}
+
+.high-contrast main:not(.question-bank):not(.exam-management) a {
+  color: #ffff00 !important;
+}
+
+@media (max-width: 480px) {
+  main:not(.question-bank):not(.exam-management) {
+    margin: 45px auto;
+    padding: 24px;
   }
 }

@@ -38,22 +38,16 @@ function StudentExam() {
   const cancelButtonRef = useRef(null);
   const previousFocusRef = useRef(null);
 
+  const hasExpiryTime = Boolean(sessionStorage.getItem("expiresAt"));
+
   useEffect(() => {
     const expiresAt = sessionStorage.getItem("expiresAt");
 
-    if (!expiresAt) {
-      setMessage(
-        "Exam expiry time is unavailable. Connect the exam start API."
-      );
-      return;
-    }
+    if (!expiresAt) return;
 
     const expiryTime = new Date(expiresAt).getTime();
 
-    if (Number.isNaN(expiryTime)) {
-      setMessage("Invalid exam expiry time.");
-      return;
-    }
+    if (Number.isNaN(expiryTime)) return;
 
     function updateTimer() {
       const remaining = Math.max(
@@ -159,9 +153,13 @@ function StudentExam() {
         Save status: {saveStatus}
       </p>
 
-      {message && (
+      {(message ||
+        (!hasExpiryTime
+          ? "Exam expiry time is unavailable. Connect the exam start API."
+          : "")) && (
         <p role="status" aria-live="polite" aria-atomic="true">
-          {message}
+          {message ||
+            "Exam expiry time is unavailable. Connect the exam start API."}
         </p>
       )}
 
@@ -180,9 +178,7 @@ function StudentExam() {
                 answers[item.id] ? "Answered" : "Unanswered"
               }${index === currentIndex ? ". Current question" : ""}`}
             >
-              {index + 1}
-              {" - "}
-              {answers[item.id] ? "Answered" : "Unanswered"}
+              {index + 1} - {answers[item.id] ? "Answered" : "Unanswered"}
             </button>
           ))}
         </div>
@@ -227,7 +223,9 @@ function StudentExam() {
 
             <button
               type="button"
-              disabled={currentIndex === questions.length - 1 || submitted}
+              disabled={
+                currentIndex === questions.length - 1 || submitted
+              }
               onClick={() => setCurrentIndex((index) => index + 1)}
             >
               Next question

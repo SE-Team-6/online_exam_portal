@@ -69,12 +69,10 @@ function QuestionBank() {
   }
 
   function handleDelete(id) {
-    const question = questions.find((item) => item.id === id);
-
-    if (
-      window.confirm("Are you sure you want to delete this question?")
-    ) {
-      setQuestions((previous) => previous.filter((item) => item.id !== id));
+    if (window.confirm("Are you sure you want to delete this question?")) {
+      setQuestions((previous) =>
+        previous.filter((item) => item.id !== id)
+      );
       setStatusMessage("Question deleted successfully.");
 
       if (editingId === id) {
@@ -173,13 +171,9 @@ function QuestionBank() {
         )}
       </form>
 
-      <h2 id="question-list-heading">
-        Questions ({questions.length})
-      </h2>
+      <h2 id="question-list-heading">Questions ({questions.length})</h2>
 
-      {questions.length === 0 && (
-        <p>No questions added yet.</p>
-      )}
+      {questions.length === 0 && <p>No questions added yet.</p>}
 
       <section aria-labelledby="question-list-heading">
         {questions.map((question) => (

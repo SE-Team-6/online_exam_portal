@@ -12,6 +12,7 @@ import {
 import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import InstructorResults from "./pages/InstructorResults";
 import Results from "./pages/Results";
 import StudentExam from "./pages/StudentExam";
 
@@ -211,6 +212,9 @@ function Admin() {
       <p>
         <Link to="/admin/exams">Manage Exams</Link>
       </p>
+      <p>
+        <Link to="/instructor-results">View Instructor Results &amp; Analytics</Link>
+      </p>
     </main>
   );
 }
@@ -285,6 +289,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["admin", "instructor"]}>
                 <ExamManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/instructor-results"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+                <InstructorResults />
               </ProtectedRoute>
             }
           />

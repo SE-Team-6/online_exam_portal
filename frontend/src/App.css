@@ -126,3 +126,150 @@
     padding: 18px;
   }
 }
+
+.exam-management {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  color: #1f2937;
+}
+
+.exam-management header {
+  margin-bottom: 28px;
+}
+
+.exam-management h1 {
+  margin-bottom: 8px;
+  font-size: 30px;
+}
+
+.exam-management header p {
+  color: #6b7280;
+}
+
+.exam-panel {
+  margin-bottom: 28px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.exam-panel h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.exam-management form {
+  display: grid;
+  gap: 12px;
+}
+
+.exam-management input:not([type="checkbox"]),
+.exam-management select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.exam-management input:focus,
+.exam-management select:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #2563eb;
+}
+
+.exam-management button {
+  width: fit-content;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exam-management button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exam-question-list {
+  display: grid;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.exam-question-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.exam-question-option input {
+  margin-top: 4px;
+}
+
+.exam-question-option span {
+  display: grid;
+  gap: 6px;
+}
+
+.exam-question-option small {
+  color: #6b7280;
+}
+
+.exam-table-wrapper {
+  overflow-x: auto;
+}
+
+.exam-management table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.exam-management th,
+.exam-management td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.exam-management th {
+  background: #f9fafb;
+}
+
+.exam-message {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.exam-error {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.exam-notice {
+  color: #166534;
+  background: #dcfce7;
+}
+
+@media (max-width: 640px) {
+  .exam-management {
+    padding: 20px 12px;
+  }
+
+  .exam-panel {
+    padding: 16px;
+  }
+}

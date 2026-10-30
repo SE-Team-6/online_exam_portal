@@ -1,6 +1,13 @@
 import mongoose from "mongoose";
 import Exam from "../models/Exam.js";
 import Question from "../models/Questions.js";
+import Attempt from "../models/Attempt.js";
+import AuditLog from "../models/AuditLog.js";
+import {
+  createExam,
+  listExamsWithAttemptCounts,
+} from "../services/exam.service.js";
+
 
 function apiError(statusCode, code, message) {
   return Object.assign(new Error(message), { statusCode, code });
@@ -32,4 +39,60 @@ export async function createExam(body, actorId) {
 
 export function listExams() {
   return Exam.find().select("title questionIds durationSeconds startsAt endsAt createdBy createdAt updatedAt").sort({ startsAt: 1 });
+}
+
+export async function listExamsWithAttemptCounts() {
+  const [exams, groupedCounts] = await Promise.all([
+    Exam.find()
+      .select("title questionIds durationSeconds startsAt endsAt createdBy")
+      .sort({ startsAt: 1 })
+      .lean(),
+
+    Attempt.aggregate([
+      {
+        $group: {
+          _id: "$examId",
+          total: { $sum: 1 },
+          inProgress: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "in_progress"] }, 1, 0],
+            },
+          },
+          submitted: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "submitted"] }, 1, 0],
+            },
+          },
+          expired: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "expired"] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+  ]);
+
+  const countsByExamId = new Map(
+    groupedCounts.map((counts) => [String(counts._id), counts])
+  );
+
+  return exams.map((exam) => {
+    const counts = countsByExamId.get(String(exam._id));
+
+    return {
+      id: String(exam._id),
+      title: exam.title,
+      startsAt: exam.startsAt,
+      endsAt: exam.endsAt,
+      durationSeconds: exam.durationSeconds,
+      questionCount: exam.questionIds.length,
+      attemptCounts: {
+        total: counts?.total ?? 0,
+        inProgress: counts?.inProgress ?? 0,
+        submitted: counts?.submitted ?? 0,
+        expired: counts?.expired ?? 0,
+      },
+    };
+  });
 }

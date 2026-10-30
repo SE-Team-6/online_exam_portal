@@ -87,6 +87,7 @@ export async function createQuestion(body) {
 export async function updateQuestion(questionId, body) {
   const question = await findQuestion(questionId);
   question.set(validateQuestion(body));
+  question.version += 1;
   await question.save();
   return question;
 }

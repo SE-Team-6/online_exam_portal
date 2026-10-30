@@ -1,4 +1,5 @@
 
+import ExamManagement from "./pages/ExamManagement";
 import { useState } from "react";
 import {
   BrowserRouter,
@@ -11,11 +12,12 @@ import {
 import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import Results from "./pages/Results";
 import StudentExam from "./pages/StudentExam";
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ function Login() {
     try {
       const data = await apiRequest("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
 
       const token = data.token ?? data.accessToken;
@@ -68,14 +70,14 @@ function Login() {
       <h1>Login</h1>
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="login-email">Email</label>
+        <label htmlFor="login-identifier">Email</label>
         <input
-          id="login-email"
-          name="email"
+          id="login-identifier"
+          name="identifier"
           type="email"
           autoComplete="username"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           required
         />
 
@@ -193,9 +195,8 @@ function Student() {
   return (
     <main>
       <h1>Student Dashboard</h1>
-      <p>
-        <Link to="/student/exam">Start Exam</Link>
-      </p>
+      <p><Link to="/student/exam">Start Exam</Link></p>
+      <p><Link to="/results">View Exam Results</Link></p>
     </main>
   );
 }
@@ -206,6 +207,9 @@ function Admin() {
       <h1>Admin Dashboard</h1>
       <p>
         <Link to="/question-bank">Manage Question Bank</Link>
+      </p>
+      <p>
+        <Link to="/admin/exams">Manage Exams</Link>
       </p>
     </main>
   );
@@ -250,6 +254,15 @@ function App() {
           />
 
           <Route
+            path="/results"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/student/exam"
             element={
               <ProtectedRoute allowedRoles={["student"]}>
@@ -263,6 +276,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["admin", "instructor"]}>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/exams"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+                <ExamManagement />
               </ProtectedRoute>
             }
           />

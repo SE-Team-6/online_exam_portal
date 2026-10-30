@@ -3,15 +3,11 @@ import Exam from "../models/Exam.js";
 export async function listAvailableExams(now = new Date()) {
   const exams = await Exam.find({
     $and: [
-      {
-        $or: [{ startsAt: null }, { startsAt: { $lte: now } }],
-      },
-      {
-        $or: [{ endsAt: null }, { endsAt: { $gte: now } }],
-      },
+      { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
+      { $or: [{ endsAt: null }, { endsAt: { $gte: now } }] },
     ],
   })
-    .select("title description durationMinutes startsAt endsAt")
+    .select("title description durationSeconds durationMinutes startsAt endsAt")
     .sort({ startsAt: 1, title: 1 })
     .lean();
 
@@ -19,7 +15,7 @@ export async function listAvailableExams(now = new Date()) {
     examId: exam._id.toString(),
     title: exam.title,
     description: exam.description,
-    durationMinutes: exam.durationMinutes,
+    durationSeconds: exam.durationSeconds ?? exam.durationMinutes * 60,
     startsAt: exam.startsAt,
     endsAt: exam.endsAt,
   }));

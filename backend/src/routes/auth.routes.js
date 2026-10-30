@@ -97,6 +97,8 @@ router.post("/login", async (req, res, next) => {
         LOCKOUT_MINUTES * 60 * 1000;
 
     if (isLocked) {
+      req.auditActorId = user._id.toString();
+      req.auditTargetId = user._id.toString();
       return next(
         apiError(
           423,

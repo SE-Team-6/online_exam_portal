@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
+    "test:integration": "node --test test/auth.integration.test.js",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "lint": "node --check src/app.js && node --check src/server.js",

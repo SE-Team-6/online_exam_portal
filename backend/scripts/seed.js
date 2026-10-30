@@ -27,6 +27,9 @@ async function upsertUser(email, name, role) {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("The demo seed script is disabled in production");
+  }
   if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI is required");
   await mongoose.connect(process.env.MONGODB_URI);
 
@@ -70,6 +73,7 @@ async function main() {
       title: "Sprint 1 Sample Exam",
       description: "Seed data for local Sprint 1 demonstrations.",
       questionIds: questions.map((question) => question._id),
+      durationSeconds: 30 * 60,
       durationMinutes: 30,
       createdBy: instructor._id,
     },

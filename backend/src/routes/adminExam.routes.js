@@ -3,7 +3,6 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
 import AuditLog from "../models/AuditLog.js";
-import { createExam, listExams } from "../services/exam.service.js";
 import {
   createExam,
   listExamsWithAttemptCounts,

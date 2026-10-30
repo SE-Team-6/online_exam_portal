@@ -1,4 +1,5 @@
 
+import ExamManagement from "./pages/ExamManagement";
 import { useState } from "react";
 import {
   BrowserRouter,
@@ -12,10 +13,11 @@ import { apiRequest } from "./services/api";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
 import Results from "./pages/Results";
+import StudentExam from "./pages/StudentExam";
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,25 +30,33 @@ function Login() {
     try {
       const data = await apiRequest("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
 
       const token = data.token ?? data.accessToken;
-      const role = String(data.role ?? data.user?.role ?? "").toLowerCase();
+      const role = String(
+        data.role ?? data.user?.role ?? ""
+      ).toLowerCase();
 
       if (!token || !["student", "admin", "instructor"].includes(role)) {
-        throw new Error("The server response is missing a valid token or role.");
+        throw new Error(
+          "The server response is missing a valid token or role."
+        );
       }
 
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", role);
 
-      navigate(role === "student" ? "/student" : "/admin", { replace: true });
+      navigate(role === "student" ? "/student" : "/admin", {
+        replace: true,
+      });
     } catch (err) {
       if (err.status === 401) {
         setError("Invalid email or password. Please try again.");
       } else if (err.status === 423) {
-        setError("Your account is locked. Please contact the administrator.");
+        setError(
+          "Your account is locked. Please contact the administrator."
+        );
       } else {
         setError(err.message || "Unable to log in. Please try again.");
       }
@@ -56,17 +66,18 @@ function Login() {
   }
 
   return (
-    <main>
+    <main className="auth-page">
       <h1>Login</h1>
+
       <form onSubmit={handleSubmit}>
-        <label htmlFor="login-email">Email</label>
+        <label htmlFor="login-identifier">Email</label>
         <input
-          id="login-email"
-          name="email"
+          id="login-identifier"
+          name="identifier"
           type="email"
           autoComplete="username"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           required
         />
 
@@ -87,6 +98,7 @@ function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
+
       <p>
         Don't have an account? <Link to="/register">Register</Link>
       </p>
@@ -126,8 +138,9 @@ function Register() {
   }
 
   return (
-    <main>
+    <main className="auth-page">
       <h1>Register</h1>
+
       <form onSubmit={handleSubmit}>
         <label htmlFor="register-name">Full name</label>
         <input
@@ -170,6 +183,7 @@ function Register() {
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
+
       <p>
         Already registered? <Link to="/login">Login</Link>
       </p>
@@ -181,9 +195,8 @@ function Student() {
   return (
     <main>
       <h1>Student Dashboard</h1>
-      <p>
-        <Link to="/results">View Exam Results</Link>
-      </p>
+      <p><Link to="/student/exam">Start Exam</Link></p>
+      <p><Link to="/results">View Exam Results</Link></p>
     </main>
   );
 }
@@ -195,57 +208,100 @@ function Admin() {
       <p>
         <Link to="/question-bank">Manage Question Bank</Link>
       </p>
+      <p>
+        <Link to="/admin/exams">Manage Exams</Link>
+      </p>
     </main>
   );
 }
 
 function App() {
+  const [highContrast, setHighContrast] = useState(
+    () => localStorage.getItem("highContrast") === "true"
+  );
+
+  function toggleHighContrast() {
+    setHighContrast((previous) => {
+      const next = !previous;
+      localStorage.setItem("highContrast", String(next));
+      return next;
+    });
+  }
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <div className={highContrast ? "high-contrast" : ""}>
+      <button
+        type="button"
+        onClick={toggleHighContrast}
+        aria-pressed={highContrast}
+      >
+        {highContrast ? "Turn off high contrast" : "Turn on high contrast"}
+      </button>
 
-        <Route
-          path="/student"
-          element={
-            <ProtectedRoute allowedRoles={["student"]}>
-              <Student />
-            </ProtectedRoute>
-          }
-        />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/results"
-          element={
-            <ProtectedRoute allowedRoles={["student"]}>
-              <Results />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/student"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <Student />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-              <Admin />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/results"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/question-bank"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-              <QuestionBank />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/student/exam"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <StudentExam />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/exams"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+                <ExamManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/question-bank"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+                <QuestionBank />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </div>
   );
 }
 

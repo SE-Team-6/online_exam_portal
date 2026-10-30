@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 import Exam from "../models/Exam.js";
 import Question from "../models/Questions.js";
 import Attempt from "../models/Attempt.js";
+import AuditLog from "../models/AuditLog.js";
+import {
+  createExam,
+  listExamsWithAttemptCounts,
+} from "../services/exam.service.js";
+
 
 function apiError(statusCode, code, message) {
   return Object.assign(new Error(message), { statusCode, code });

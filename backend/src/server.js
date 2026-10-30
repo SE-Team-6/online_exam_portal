@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import https from "node:https";
 import app from "./app.js";
 import { connectToDatabase } from "./config/database.js";
+import { autoSubmitExpiredAttempts } from "./services/attempt.service.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const keyPath = process.env.TLS_KEY_PATH;
@@ -32,3 +33,17 @@ try {
   console.error("Could not start backend. Check MongoDB availability and TLS certificate configuration.");
   process.exit(1);
 }
+
+
+const runExpirySweep = async () => {
+  try {
+    await autoSubmitExpiredAttempts();
+  } catch (error) {
+    console.error("Attempt expiry sweep failed:", error.message);
+  }
+};
+
+await runExpirySweep();
+
+const expirySweepTimer = setInterval(runExpirySweep, 5_000);
+expirySweepTimer.unref();

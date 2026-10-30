@@ -268,3 +268,129 @@ export async function saveAttemptAnswer({
     savedAt: updatedAttempt.updatedAt,
   };
 }
+
+export async function submitAttempt({ attemptId, studentId }) {
+  if (!mongoose.isValidObjectId(attemptId)) {
+    throw apiError(400, "INVALID_ATTEMPT_ID", "Attempt ID is invalid.");
+  }
+
+  const attempt = await Attempt.findById(attemptId).select(
+    "studentId status expiresAt submittedAt"
+  );
+
+  if (!attempt) {
+    throw apiError(404, "ATTEMPT_NOT_FOUND", "Attempt was not found.");
+  }
+
+  if (String(attempt.studentId) !== String(studentId)) {
+    throw apiError(
+      403,
+      "FORBIDDEN",
+      "You cannot submit another student's attempt."
+    );
+  }
+
+  // Make a repeated submit request safe: return the existing submission.
+  if (attempt.status === "submitted") {
+    return {
+      attemptId: attempt._id.toString(),
+      status: attempt.status,
+      submittedAt: attempt.submittedAt,
+    };
+  }
+
+  if (attempt.status !== "in_progress") {
+    throw apiError(409, "ATTEMPT_NOT_ACTIVE", "This attempt is not active.");
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(attempt.expiresAt);
+
+  // A late submit is recorded at the server-side deadline.
+  const submittedAt = now >= expiresAt ? expiresAt : now;
+
+  const updatedAttempt = await Attempt.findOneAndUpdate(
+    {
+      _id: attempt._id,
+      studentId,
+      status: "in_progress",
+      submittedAt: null,
+    },
+    {
+      $set: {
+        status: "submitted",
+        submittedAt,
+      },
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (updatedAttempt) {
+    return {
+      attemptId: updatedAttempt._id.toString(),
+      status: updatedAttempt.status,
+      submittedAt: updatedAttempt.submittedAt,
+    };
+  }
+
+  // Another request or the expiry worker may have submitted it concurrently.
+  const latestAttempt = await Attempt.findById(attemptId).select(
+    "studentId status submittedAt"
+  );
+
+  if (!latestAttempt) {
+    throw apiError(404, "ATTEMPT_NOT_FOUND", "Attempt was not found.");
+  }
+
+  if (String(latestAttempt.studentId) !== String(studentId)) {
+    throw apiError(
+      403,
+      "FORBIDDEN",
+      "You cannot submit another student's attempt."
+    );
+  }
+
+  if (latestAttempt.status === "submitted") {
+    return {
+      attemptId: latestAttempt._id.toString(),
+      status: latestAttempt.status,
+      submittedAt: latestAttempt.submittedAt,
+    };
+  }
+
+  throw apiError(409, "ATTEMPT_NOT_ACTIVE", "This attempt is not active.");
+}
+
+export async function autoSubmitExpiredAttempts(now = new Date()) {
+  const expiredAttempts = await Attempt.find({
+    status: "in_progress",
+    expiresAt: { $lte: now },
+    submittedAt: null,
+  })
+    .select("_id expiresAt")
+    .limit(100)
+    .lean();
+
+  let submittedCount = 0;
+
+  for (const attempt of expiredAttempts) {
+    const result = await Attempt.updateOne(
+      {
+        _id: attempt._id,
+        status: "in_progress",
+        expiresAt: { $lte: now },
+        submittedAt: null,
+      },
+      {
+        $set: {
+          status: "submitted",
+          submittedAt: attempt.expiresAt,
+        },
+      }
+    );
+
+    submittedCount += result.modifiedCount;
+  }
+
+  return submittedCount;
+}

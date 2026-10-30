@@ -5,8 +5,26 @@ import { requireRole } from "../middleware/requireRole.js";
 import { getAttemptResult } from "../services/grading.service.js";
 import { startAttempt } from "../services/attempt.service.js";
 import { saveAttemptAnswer } from "../services/attempt.service.js";
+import {
+  startAttempt,
+  saveAttemptAnswer,
+  submitAttempt,
+} from "../services/attempt.service.js";
+
 const router = express.Router();
 router.use(requireAuth, requireRole("student"));
+
+router.post(
+  "/:attemptId/submit",
+  asyncHandler(async (req, res) => {
+    const attempt = await submitAttempt({
+      attemptId: req.params.attemptId,
+      studentId: req.user.id,
+    });
+
+    res.status(200).json({ attempt });
+  })
+);
 
 router.put(
   "/:attemptId/answers/:questionId",

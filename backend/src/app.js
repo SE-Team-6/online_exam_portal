@@ -6,6 +6,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import adminQuestionRoutes from "./routes/adminQuestion.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import { requireHttps } from "./middleware/requireHttps.js";
 import auditRoutes from "./routes/audit.routes.js";
 import { auditEvents } from "./middleware/auditEvents.js";
 import attemptRoutes from "./routes/attempt.routes.js";
@@ -15,6 +16,9 @@ const app = express();
 
 app.disable("x-powered-by");
 app.use(requestIdMiddleware);
+const proxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS, 10);
+if (Number.isInteger(proxyHops) && proxyHops > 0) app.set("trust proxy", proxyHops);
+app.use(requireHttps);
 app.use(corsMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(auditEvents);

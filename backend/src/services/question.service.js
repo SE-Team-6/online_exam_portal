@@ -84,6 +84,27 @@ export async function createQuestion(body) {
   return Question.create(validateQuestion(body));
 }
 
+export async function importQuestions(bodies) {
+  if (!Array.isArray(bodies) || bodies.length === 0) {
+    throw apiError(400, "INVALID_IMPORT", "Provide at least one question to import.");
+  }
+  if (bodies.length > 500) {
+    throw apiError(400, "IMPORT_TOO_LARGE", "Import at most 500 questions at a time.");
+  }
+
+  const questions = bodies.map((body, index) => {
+    try {
+      return validateQuestion(body);
+    } catch (error) {
+      error.message = `Row ${index + 2}: ${error.message}`;
+      throw error;
+    }
+  });
+
+  const inserted = await Question.insertMany(questions, { ordered: true });
+  return inserted;
+}
+
 export async function updateQuestion(questionId, body) {
   const question = await findQuestion(questionId);
   question.set(validateQuestion(body));

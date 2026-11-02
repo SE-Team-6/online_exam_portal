@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
+import { parseQuestionCsv } from "../utils/questionCsv";
 
 const emptyForm = {
   stem: "",
@@ -20,6 +21,7 @@ function QuestionBank() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [importing, setImporting] = useState(false);
 
   async function loadQuestions() {
     try {
@@ -92,6 +94,36 @@ function QuestionBank() {
     }
   }
 
+  async function handleCsvImport(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setError("");
+    setStatusMessage("");
+    if (file.size > 1_000_000) {
+      setError("Choose a CSV file smaller than 1 MB.");
+      input.value = "";
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const questionsToImport = parseQuestionCsv(await file.text());
+      const data = await apiRequest("/admin/questions/import", {
+        method: "POST",
+        body: JSON.stringify({ questions: questionsToImport }),
+      });
+      await loadQuestions();
+      setStatusMessage(`${data.importedCount} questions imported successfully.`);
+    } catch (requestError) {
+      setError(requestError.message || "Unable to import questions.");
+    } finally {
+      setImporting(false);
+      input.value = "";
+    }
+  }
+
   function handleEdit(question) {
     setForm({
       stem: question.stem,
@@ -114,6 +146,23 @@ function QuestionBank() {
       <h1>Question Bank Management</h1>
       {error && <p role="alert">{error}</p>}
       <p role="status" aria-live="polite" aria-atomic="true">{statusMessage}</p>
+
+      <section className="question-import" aria-labelledby="question-import-heading">
+        <h2 id="question-import-heading">Import questions from CSV</h2>
+        <p>
+          Required headers: stem, optionA, optionB, optionC, optionD,
+          correctOptionId, tags, difficulty. Separate multiple tags with semicolons.
+        </p>
+        <label htmlFor="question-csv">CSV file</label>
+        <input
+          id="question-csv"
+          type="file"
+          accept=".csv,text/csv"
+          disabled={importing}
+          onChange={handleCsvImport}
+        />
+        {importing && <p role="status">Importing questions...</p>}
+      </section>
 
       <form onSubmit={handleSubmit} aria-labelledby="question-form-heading">
         <h2 id="question-form-heading">{editingId ? "Edit Question" : "Create Question"}</h2>

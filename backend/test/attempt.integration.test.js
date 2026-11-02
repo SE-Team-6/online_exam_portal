@@ -323,6 +323,69 @@ test("submission freezes grading, returns the result, and safely handles concurr
     }),
     1
   );
+
+  const studentResultsResponse = await request("/api/student/results", {
+    token: studentToken,
+  });
+  const studentResults = await studentResultsResponse.json();
+  assert.equal(studentResultsResponse.status, 200);
+  assert.equal(studentResults.results.length, 1);
+  assert.equal(studentResults.results[0].attemptId, attempt.attemptId);
+  assert.equal(studentResults.results[0].percentage, 50);
+  assert.equal(studentResults.results[0].percentile, 100);
+
+  const staffResultsResponse = await request("/api/admin/results", {
+    token: instructorToken,
+  });
+  const staffResults = await staffResultsResponse.json();
+  assert.equal(staffResultsResponse.status, 200);
+  assert.equal(staffResults.results.length, 1);
+  assert.equal(staffResults.results[0].studentEmail, student.email);
+  assert.equal(staffResults.analytics.resultCount, 1);
+
+  const forbiddenReport = await request("/api/admin/results", {
+    token: studentToken,
+  });
+  assert.equal(forbiddenReport.status, 403);
+});
+
+test("question CSV import validates every row before creating questions", async () => {
+  const question = {
+    stem: "Imported test question",
+    options: [
+      { optionId: "a", text: "Option A" },
+      { optionId: "b", text: "Option B" },
+      { optionId: "c", text: "Option C" },
+      { optionId: "d", text: "Option D" },
+    ],
+    correctOptionId: "a",
+    tags: ["import-test"],
+    difficulty: "Easy",
+  };
+
+  const imported = await request("/api/admin/questions/import", {
+    token: instructorToken,
+    method: "POST",
+    body: { questions: [question, { ...question, stem: "Imported test question two" }] },
+  });
+  const importedBody = await imported.json();
+  assert.equal(imported.status, 201);
+  assert.equal(importedBody.importedCount, 2);
+  createdQuestionIds.push(...importedBody.questionIds);
+
+  const beforeInvalidImport = await Question.countDocuments({ tags: "import-test" });
+  const invalidImport = await request("/api/admin/questions/import", {
+    token: instructorToken,
+    method: "POST",
+    body: {
+      questions: [
+        { ...question, stem: "Should not be partially imported" },
+        { ...question, correctOptionId: "missing" },
+      ],
+    },
+  });
+  assert.equal(invalidImport.status, 400);
+  assert.equal(await Question.countDocuments({ tags: "import-test" }), beforeInvalidImport);
 });
 
 test("a save after the deadline is rejected and finalizes and grades the attempt", async () => {

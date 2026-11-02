@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Attempt from "../models/Attempt.js";
 import Exam from "../models/Exam.js";
 import Question from "../models/Questions.js";
+import { gradeSubmittedAttempt } from "./grading.service.js";
 
 function apiError(statusCode, code, message) {
   return Object.assign(new Error(message), { statusCode, code });
@@ -18,6 +19,54 @@ function shuffle(items) {
   }
 
   return shuffled;
+}
+
+function submissionResponse(attempt, result) {
+  return {
+    attemptId: attempt._id.toString(),
+    examId: attempt.examId.toString(),
+    status: attempt.status,
+    submittedAt: attempt.submittedAt,
+    score: result.score,
+    maxScore: result.maxScore,
+  };
+}
+
+async function finalizeExpiredAttempt(attempt, now, requestId = "unknown") {
+  if (
+    !attempt ||
+    attempt.status !== "in_progress" ||
+    new Date(attempt.expiresAt) > now
+  ) {
+    return attempt;
+  }
+
+  const finalizedAttempt = await Attempt.findOneAndUpdate(
+    {
+      _id: attempt._id,
+      status: "in_progress",
+      expiresAt: { $lte: now },
+      submittedAt: null,
+    },
+    {
+      $set: {
+        status: "submitted",
+        submittedAt: attempt.expiresAt,
+      },
+    },
+    { returnDocument: "after", runValidators: true }
+  );
+
+  if (finalizedAttempt) {
+    await gradeSubmittedAttempt(finalizedAttempt, { requestId });
+    return finalizedAttempt;
+  }
+
+  const latestAttempt = await Attempt.findById(attempt._id);
+  if (latestAttempt?.status === "submitted") {
+    await gradeSubmittedAttempt(latestAttempt, { requestId });
+  }
+  return latestAttempt;
 }
 
 export async function startAttempt({ examId, studentId }) {
@@ -82,9 +131,13 @@ export async function startAttempt({ examId, studentId }) {
   }
 
   const randomizedQuestions = shuffle(examQuestions);
-  const expiresAt = new Date(
+  const durationDeadline = new Date(
     startedAt.getTime() + durationSeconds * 1000
   );
+  const examDeadline = exam.endsAt ? new Date(exam.endsAt) : null;
+  const expiresAt = examDeadline && examDeadline < durationDeadline
+    ? examDeadline
+    : durationDeadline;
 
   const attempt = await Attempt.create({
     examId: exam._id,
@@ -173,6 +226,11 @@ export async function saveAttemptAnswer({
     throw apiError(409, "ATTEMPT_NOT_ACTIVE", "This attempt is not active.");
   }
 
+  if (new Date(attempt.expiresAt) <= new Date()) {
+    await finalizeExpiredAttempt(attempt, new Date());
+    throw apiError(409, "ATTEMPT_EXPIRED", "The exam deadline has passed.");
+  }
+
   const question = await Question.findById(questionId)
     .select("options.optionId")
     .lean();
@@ -210,9 +268,13 @@ export async function saveAttemptAnswer({
       "answers.questionId": question._id,
     },
     {
-      $set: { "answers.$.selectedOptionId": optionId },
+      $set: { "answers.$[answer].selectedOptionId": optionId },
     },
-    { new: true, runValidators: true }
+    {
+      returnDocument: "after",
+      runValidators: true,
+      arrayFilters: [{ "answer.questionId": question._id }],
+    }
   );
 
   // Otherwise add one answer. The filter prevents concurrent retries from
@@ -235,7 +297,7 @@ export async function saveAttemptAnswer({
           },
         },
       },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     );
   }
 
@@ -247,13 +309,27 @@ export async function saveAttemptAnswer({
         "answers.questionId": question._id,
       },
       {
-        $set: { "answers.$.selectedOptionId": optionId },
+        $set: { "answers.$[answer].selectedOptionId": optionId },
       },
-      { new: true, runValidators: true }
+      {
+        returnDocument: "after",
+        runValidators: true,
+        arrayFilters: [{ "answer.questionId": question._id }],
+      }
     );
   }
 
   if (!updatedAttempt) {
+    const latestAttempt = await Attempt.findById(attempt._id).select(
+      "status expiresAt"
+    );
+    if (
+      latestAttempt?.status === "in_progress" &&
+      new Date(latestAttempt.expiresAt) <= new Date()
+    ) {
+      await finalizeExpiredAttempt(latestAttempt, new Date());
+      throw apiError(409, "ATTEMPT_EXPIRED", "The exam deadline has passed.");
+    }
     throw apiError(
       409,
       "ATTEMPT_NOT_ACTIVE",
@@ -269,14 +345,51 @@ export async function saveAttemptAnswer({
   };
 }
 
-export async function submitAttempt({ attemptId, studentId }) {
+export async function saveAttemptAnswers({ attemptId, answers, studentId }) {
+  if (!Array.isArray(answers) || answers.length === 0) {
+    throw apiError(400, "INVALID_ANSWERS", "At least one answer is required.");
+  }
+
+  const seenQuestionIds = new Set();
+  for (const answer of answers) {
+    if (!answer || typeof answer !== "object") {
+      throw apiError(400, "INVALID_ANSWERS", "Each answer must be an object.");
+    }
+    if (!mongoose.isValidObjectId(answer.questionId)) {
+      throw apiError(400, "INVALID_ID", "Each answer must include a valid questionId.");
+    }
+    if (seenQuestionIds.has(String(answer.questionId))) {
+      throw apiError(400, "INVALID_ANSWERS", "Question IDs must be unique in a save request.");
+    }
+    seenQuestionIds.add(String(answer.questionId));
+    if (typeof answer.selectedOptionId !== "string" || !answer.selectedOptionId.trim()) {
+      throw apiError(400, "INVALID_OPTION", "Each answer must include a selectedOptionId.");
+    }
+  }
+
+  const savedAnswers = [];
+  for (const answer of answers) {
+    savedAnswers.push(await saveAttemptAnswer({
+      attemptId,
+      questionId: answer.questionId,
+      selectedOptionId: answer.selectedOptionId,
+      studentId,
+    }));
+  }
+
+  return {
+    attemptId: String(attemptId),
+    savedAt: savedAnswers[savedAnswers.length - 1].savedAt,
+    savedCount: savedAnswers.length,
+  };
+}
+
+export async function submitAttempt({ attemptId, studentId, requestId = "unknown" }) {
   if (!mongoose.isValidObjectId(attemptId)) {
     throw apiError(400, "INVALID_ATTEMPT_ID", "Attempt ID is invalid.");
   }
 
-  const attempt = await Attempt.findById(attemptId).select(
-    "studentId status expiresAt submittedAt"
-  );
+  const attempt = await Attempt.findById(attemptId);
 
   if (!attempt) {
     throw apiError(404, "ATTEMPT_NOT_FOUND", "Attempt was not found.");
@@ -292,11 +405,8 @@ export async function submitAttempt({ attemptId, studentId }) {
 
   // Make a repeated submit request safe: return the existing submission.
   if (attempt.status === "submitted") {
-    return {
-      attemptId: attempt._id.toString(),
-      status: attempt.status,
-      submittedAt: attempt.submittedAt,
-    };
+    const result = await gradeSubmittedAttempt(attempt, { requestId });
+    return submissionResponse(attempt, result);
   }
 
   if (attempt.status !== "in_progress") {
@@ -307,7 +417,8 @@ export async function submitAttempt({ attemptId, studentId }) {
   const expiresAt = new Date(attempt.expiresAt);
 
   // A late submit is recorded at the server-side deadline.
-  const submittedAt = now >= expiresAt ? expiresAt : now;
+  const isExpired = now >= expiresAt;
+  const submittedAt = isExpired ? expiresAt : now;
 
   const updatedAttempt = await Attempt.findOneAndUpdate(
     {
@@ -315,6 +426,7 @@ export async function submitAttempt({ attemptId, studentId }) {
       studentId,
       status: "in_progress",
       submittedAt: null,
+      expiresAt: isExpired ? { $lte: now } : { $gt: now },
     },
     {
       $set: {
@@ -322,21 +434,16 @@ export async function submitAttempt({ attemptId, studentId }) {
         submittedAt,
       },
     },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (updatedAttempt) {
-    return {
-      attemptId: updatedAttempt._id.toString(),
-      status: updatedAttempt.status,
-      submittedAt: updatedAttempt.submittedAt,
-    };
+    const result = await gradeSubmittedAttempt(updatedAttempt, { requestId });
+    return submissionResponse(updatedAttempt, result);
   }
 
   // Another request or the expiry worker may have submitted it concurrently.
-  const latestAttempt = await Attempt.findById(attemptId).select(
-    "studentId status submittedAt"
-  );
+  const latestAttempt = await Attempt.findById(attemptId);
 
   if (!latestAttempt) {
     throw apiError(404, "ATTEMPT_NOT_FOUND", "Attempt was not found.");
@@ -351,11 +458,19 @@ export async function submitAttempt({ attemptId, studentId }) {
   }
 
   if (latestAttempt.status === "submitted") {
-    return {
-      attemptId: latestAttempt._id.toString(),
-      status: latestAttempt.status,
-      submittedAt: latestAttempt.submittedAt,
-    };
+    const result = await gradeSubmittedAttempt(latestAttempt, { requestId });
+    return submissionResponse(latestAttempt, result);
+  }
+
+  if (
+    latestAttempt.status === "in_progress" &&
+    new Date(latestAttempt.expiresAt) <= new Date()
+  ) {
+    const finalizedAttempt = await finalizeExpiredAttempt(latestAttempt, new Date(), requestId);
+    if (finalizedAttempt?.status === "submitted") {
+      const result = await gradeSubmittedAttempt(finalizedAttempt, { requestId });
+      return submissionResponse(finalizedAttempt, result);
+    }
   }
 
   throw apiError(409, "ATTEMPT_NOT_ACTIVE", "This attempt is not active.");
@@ -374,7 +489,7 @@ export async function autoSubmitExpiredAttempts(now = new Date()) {
   let submittedCount = 0;
 
   for (const attempt of expiredAttempts) {
-    const result = await Attempt.updateOne(
+    const finalizedAttempt = await Attempt.findOneAndUpdate(
       {
         _id: attempt._id,
         status: "in_progress",
@@ -386,10 +501,14 @@ export async function autoSubmitExpiredAttempts(now = new Date()) {
           status: "submitted",
           submittedAt: attempt.expiresAt,
         },
-      }
+      },
+      { returnDocument: "after", runValidators: true }
     );
 
-    submittedCount += result.modifiedCount;
+    if (finalizedAttempt) {
+      await gradeSubmittedAttempt(finalizedAttempt);
+      submittedCount += 1;
+    }
   }
 
   return submittedCount;

@@ -6,11 +6,10 @@ function ExamManagement() {
   const [questions, setQuestions] = useState([]);
   const [exams, setExams] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [loadingExams, setLoadingExams] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [liveExams, setLiveExams] = useState([]);
-  const [loadingLiveExams, setLoadingLiveExams] = useState(true);
-  const [liveExamsError, setLiveExamsError] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -19,66 +18,53 @@ function ExamManagement() {
     questionIds: [],
   });
 
+  async function loadExams() {
+    setLoadingExams(true);
+    try {
+      const data = await apiRequest("/admin/exams");
+      setExams(Array.isArray(data.exams) ? data.exams : []);
+    } catch (err) {
+      setError(err.message || "Unable to load saved exams.");
+    } finally {
+      setLoadingExams(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
-    async function loadQuestions() {
+    async function loadInitialData() {
       try {
-        setLoadingQuestions(true);
         const data = await apiRequest("/admin/questions");
-
         if (active) {
           setQuestions(Array.isArray(data.questions) ? data.questions : []);
         }
       } catch (err) {
         if (active) {
-          setError(
-            err.status === 401 || err.status === 403
-              ? "Please log in with an instructor or admin account to load questions."
-              : err.message || "Unable to load questions from the server."
-          );
+          setError(err.message || "Unable to load questions.");
         }
       } finally {
         if (active) setLoadingQuestions(false);
       }
-    }
 
-    loadQuestions();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadLiveExams() {
       try {
         const data = await apiRequest("/admin/exams");
-
         if (active) {
-          setLiveExams(Array.isArray(data.exams) ? data.exams : []);
-          setLiveExamsError("");
+          setExams(Array.isArray(data.exams) ? data.exams : []);
         }
       } catch (err) {
         if (active) {
-          setLiveExamsError(
-            err.message || "Unable to load exam attempt counts."
-          );
+          setError(err.message || "Unable to load saved exams.");
         }
       } finally {
-        if (active) setLoadingLiveExams(false);
+        if (active) setLoadingExams(false);
       }
     }
 
-    loadLiveExams();
-
-    const refreshTimer = setInterval(loadLiveExams, 10_000);
+    loadInitialData();
 
     return () => {
       active = false;
-      clearInterval(refreshTimer);
     };
   }, []);
 
@@ -96,7 +82,7 @@ function ExamManagement() {
     }));
   }
 
-  function handleSchedule(event) {
+  async function handleSchedule(event) {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -107,54 +93,84 @@ function ExamManagement() {
     }
 
     if (form.questionIds.length === 0) {
-      setError("Select at least one question for the exam.");
+      setError("Select at least one question.");
       return;
     }
 
     const startDate = new Date(form.startAt);
 
-    if (Number.isNaN(startDate.getTime()) || startDate <= new Date()) {
+    if (!form.startAt || Number.isNaN(startDate.getTime()) || startDate <= new Date()) {
       setError("Choose a valid start time in the future.");
       return;
     }
 
-    const duration = Number(form.durationMinutes);
+    const durationMinutes = Number(form.durationMinutes);
 
-    if (!Number.isInteger(duration) || duration < 1 || duration > 600) {
+    if (
+      !Number.isInteger(durationMinutes) ||
+      durationMinutes < 1 ||
+      durationMinutes > 600
+    ) {
       setError("Duration must be between 1 and 600 minutes.");
       return;
     }
 
-    // This is a local preview only; it does not save the exam to the backend.
-    const exam = {
-      id: crypto.randomUUID(),
+    const durationSeconds = durationMinutes * 60;
+    const endDate = new Date(
+      startDate.getTime() + durationSeconds * 1000
+    );
+
+    const payload = {
       title: form.title.trim(),
-      startAt: startDate.toISOString(),
-      durationMinutes: duration,
-      questionIds: [...form.questionIds],
+      questionIds: form.questionIds,
+      durationSeconds,
+      startsAt: startDate.toISOString(),
+      endsAt: endDate.toISOString(),
     };
 
-    setExams((current) => [...current, exam]);
-    setForm({
-      title: "",
-      startAt: "",
-      durationMinutes: "60",
-      questionIds: [],
-    });
-    setNotice(
-      "Exam added to this temporary preview only. It has not been saved to the server."
-    );
+    setSaving(true);
+
+    try {
+      await apiRequest("/admin/exams", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setNotice("Exam successfully saved to the server.");
+
+      setForm({
+        title: "",
+        startAt: "",
+        durationMinutes: "60",
+        questionIds: [],
+      });
+
+      await loadExams();
+    } catch (err) {
+      setError(err.message || "Unable to schedule the exam.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function formatDate(date) {
-    return new Date(date).toLocaleString();
+    if (!date) return "Not scheduled";
+    const parsed = new Date(date);
+    return Number.isNaN(parsed.getTime())
+      ? "Invalid date"
+      : parsed.toLocaleString();
+  }
+
+  function getExamId(exam) {
+    return String(exam._id ?? exam.id);
   }
 
   return (
     <main className="exam-management">
-      <header>
-        <h1>Admin Exam Management</h1>
-        <p>Create exams, schedule their start time, and select questions.</p>
+      <header className="page-heading">
+        <p className="eyebrow">STAFF WORKSPACE</p>
+        <h1>Exam Management</h1>
+        <p>Create, schedule and manage examinations.</p>
       </header>
 
       {error && (
@@ -170,7 +186,7 @@ function ExamManagement() {
       )}
 
       <section className="exam-panel">
-        <h2>Schedule an exam</h2>
+        <h2>Schedule a new exam</h2>
 
         <form onSubmit={handleSchedule}>
           <label htmlFor="exam-title">Exam title</label>
@@ -210,11 +226,12 @@ function ExamManagement() {
           {loadingQuestions ? (
             <p>Loading questions...</p>
           ) : questions.length === 0 ? (
-            <p>No questions are available. Check the backend and your login.</p>
+            <p>No questions are available. Check your login and backend.</p>
           ) : (
             <div className="exam-question-list">
               {questions.map((question) => {
-                const id = question._id ?? question.id ?? question.questionId;
+                const id =
+                  question._id ?? question.id ?? question.questionId;
 
                 if (!id) return null;
 
@@ -245,60 +262,28 @@ function ExamManagement() {
             Selected questions: <strong>{form.questionIds.length}</strong>
           </p>
 
-          <button type="submit" disabled={loadingQuestions}>
-            Add exam to preview
+          <button type="submit" disabled={saving || loadingQuestions}>
+            {saving ? "Saving exam..." : "Schedule exam"}
           </button>
         </form>
       </section>
 
       <section className="exam-panel">
-        <h2>Live attempt counts</h2>
-        <p>Counts refresh every 10 seconds.</p>
+        <div className="exam-list-heading">
+          <h2>Saved examinations</h2>
+          <button
+            type="button"
+            onClick={loadExams}
+            disabled={loadingExams}
+          >
+            {loadingExams ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
 
-        {loadingLiveExams ? (
-          <p>Loading exams...</p>
-        ) : liveExamsError ? (
-          <p role="alert">{liveExamsError}</p>
-        ) : liveExams.length === 0 ? (
-          <p>No saved exams are available.</p>
-        ) : (
-          <div className="exam-table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Exam</th>
-                  <th>In progress</th>
-                  <th>Submitted</th>
-                  <th>Expired</th>
-                  <th>Total attempts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {liveExams.map((exam) => {
-                  const counts = exam.attemptCounts ?? {};
-
-                  return (
-                    <tr key={exam.id}>
-                      <td>{exam.title}</td>
-                      <td>{counts.inProgress ?? 0}</td>
-                      <td>{counts.submitted ?? 0}</td>
-                      <td>{counts.expired ?? 0}</td>
-                      <td>{counts.total ?? 0}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="exam-panel">
-        <h2>Local exam preview</h2>
-        <p>These preview exams have not been saved to the server.</p>
-
-        {exams.length === 0 ? (
-          <p>No exams in this preview yet.</p>
+        {loadingExams ? (
+          <p>Loading saved exams...</p>
+        ) : exams.length === 0 ? (
+          <p>No examinations have been scheduled yet.</p>
         ) : (
           <div className="exam-table-wrapper">
             <table>
@@ -306,21 +291,39 @@ function ExamManagement() {
                 <tr>
                   <th>Exam</th>
                   <th>Start time</th>
+                  <th>End time</th>
                   <th>Duration</th>
                   <th>Questions</th>
-                  <th>Attempt count</th>
+                  <th>In progress</th>
+                  <th>Submitted</th>
+                  <th>Expired</th>
+                  <th>Total attempts</th>
                 </tr>
               </thead>
               <tbody>
-                {exams.map((exam) => (
-                  <tr key={exam.id}>
-                    <td>{exam.title}</td>
-                    <td>{formatDate(exam.startAt)}</td>
-                    <td>{exam.durationMinutes} min</td>
-                    <td>{exam.questionIds.length}</td>
-                    <td>Unavailable — preview is not saved</td>
-                  </tr>
-                ))}
+                {exams.map((exam) => {
+                  const counts = exam.attemptCounts ?? {};
+
+                  return (
+                    <tr key={getExamId(exam)}>
+                      <td>{exam.title}</td>
+                      <td>{formatDate(exam.startsAt)}</td>
+                      <td>{formatDate(exam.endsAt)}</td>
+                      <td>
+                        {Math.round(
+                          Number(exam.durationSeconds ?? 0) / 60
+                        )} min
+                      </td>
+                      <td>
+                        {exam.questionCount ?? exam.questionIds?.length ?? 0}
+                      </td>
+                      <td>{counts.inProgress ?? 0}</td>
+                      <td>{counts.submitted ?? 0}</td>
+                      <td>{counts.expired ?? 0}</td>
+                      <td>{counts.total ?? 0}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

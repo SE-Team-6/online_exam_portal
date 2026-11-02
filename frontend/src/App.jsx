@@ -1,6 +1,5 @@
 
-import ExamManagement from "./pages/ExamManagement";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -8,10 +7,14 @@ import {
   Navigate,
   Link,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
+
 import { apiRequest } from "./services/api";
+import { startAttempt } from "./services/attemptService";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import ExamManagement from "./pages/ExamManagement";
 import InstructorResults from "./pages/InstructorResults";
 import Results from "./pages/Results";
 import StudentExam from "./pages/StudentExam";
@@ -35,14 +38,10 @@ function Login() {
       });
 
       const token = data.token ?? data.accessToken;
-      const role = String(
-        data.role ?? data.user?.role ?? ""
-      ).toLowerCase();
+      const role = String(data.role ?? data.user?.role ?? "").toLowerCase();
 
       if (!token || !["student", "admin", "instructor"].includes(role)) {
-        throw new Error(
-          "The server response is missing a valid token or role."
-        );
+        throw new Error("The server response is missing a valid token or role.");
       }
 
       sessionStorage.setItem("token", token);
@@ -55,9 +54,7 @@ function Login() {
       if (err.status === 401) {
         setError("Invalid email or password. Please try again.");
       } else if (err.status === 423) {
-        setError(
-          "Your account is locked. Please contact the administrator."
-        );
+        setError("Your account is locked. Please contact the administrator.");
       } else {
         setError(err.message || "Unable to log in. Please try again.");
       }
@@ -67,9 +64,8 @@ function Login() {
   }
 
   return (
-    <main className="auth-page">
+    <main>
       <h1>Login</h1>
-
       <form onSubmit={handleSubmit}>
         <label htmlFor="login-identifier">Email</label>
         <input
@@ -139,9 +135,8 @@ function Register() {
   }
 
   return (
-    <main className="auth-page">
+    <main>
       <h1>Register</h1>
-
       <form onSubmit={handleSubmit}>
         <label htmlFor="register-name">Full name</label>
         <input
@@ -193,13 +188,98 @@ function Register() {
 }
 
 function Student() {
+  const navigate = useNavigate();
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [startingExamId, setStartingExamId] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadExams() {
+      try {
+        const data = await apiRequest("/student/exams");
+        setExams(data.exams || []);
+      } catch (err) {
+        setError(err.message || "Unable to load available exams.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadExams();
+  }, []);
+
+  async function handleStartExam(examId) {
+    setError("");
+    setStartingExamId(examId);
+
+    try {
+      const data = await startAttempt(examId);
+      const attempt = data.attempt;
+
+      if (!attempt?.attemptId || !attempt?.expiresAt || !attempt?.questions) {
+        throw new Error("The server returned incomplete exam attempt details.");
+      }
+
+      navigate("/student/exam", {
+        state: { attempt },
+      });
+    } catch (err) {
+      setError(err.message || "Unable to start the exam.");
+    } finally {
+      setStartingExamId(null);
+    }
+  }
+
   return (
     <main>
       <h1>Student Dashboard</h1>
-      <p><Link to="/student/exam">Start Exam</Link></p>
+      <h2>Available Exams</h2>
+
+      {loading && <p role="status">Loading available exams...</p>}
+      {error && <p role="alert">{error}</p>}
+
+      {!loading && !error && exams.length === 0 && (
+        <p>No exams are currently available.</p>
+      )}
+
+      {exams.map((exam) => (
+        <article key={exam.examId}>
+          <h3>{exam.title}</h3>
+          <p>{exam.description || "No description available."}</p>
+          <p>
+            Duration: {Math.ceil(exam.durationSeconds / 60)} minutes
+          </p>
+          <p>
+            Starts: {exam.startsAt
+              ? new Date(exam.startsAt).toLocaleString()
+              : "Available now"}
+          </p>
+          <p>
+            Ends: {exam.endsAt
+              ? new Date(exam.endsAt).toLocaleString()
+              : "No scheduled end"}
+          </p>
+
+          <button
+            type="button"
+            disabled={startingExamId !== null}
+            onClick={() => handleStartExam(exam.examId)}
+          >
+            {startingExamId === exam.examId ? "Starting..." : "Start Exam"}
+          </button>
+        </article>
+      ))}
       <p><Link to="/results">View Exam Results</Link></p>
     </main>
   );
+}
+
+function StudentExamRoute() {
+  const location = useLocation();
+  const attempt = location.state?.attempt;
+
+  return <StudentExam initialAttempt={attempt} />;
 }
 
 function Admin() {
@@ -209,12 +289,8 @@ function Admin() {
       <p>
         <Link to="/question-bank">Manage Question Bank</Link>
       </p>
-      <p>
-        <Link to="/admin/exams">Manage Exams</Link>
-      </p>
-      <p>
-        <Link to="/instructor-results">View Instructor Results &amp; Analytics</Link>
-      </p>
+      <p><Link to="/admin/exams">Manage Exams</Link></p>
+      <p><Link to="/instructor-results">View Instructor Results &amp; Analytics</Link></p>
     </main>
   );
 }
@@ -241,78 +317,77 @@ function App() {
       >
         {highContrast ? "Turn off high contrast" : "Turn on high contrast"}
       </button>
-
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-          <Route
-            path="/student"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <Student />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/student"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Student />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/results"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <Results />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/student/exam"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <StudentExamRoute />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/student/exam"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <StudentExam />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/results"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Results />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-                <Admin />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/admin/exams"
-            element={
-              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-                <ExamManagement />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/exams"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <ExamManagement />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/instructor-results"
-            element={
-              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-                <InstructorResults />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/instructor-results"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <InstructorResults />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/question-bank"
-            element={
-              <ProtectedRoute allowedRoles={["admin", "instructor"]}>
-                <QuestionBank />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/question-bank"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "instructor"]}>
+              <QuestionBank />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
       </BrowserRouter>
     </div>
   );

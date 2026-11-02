@@ -43,21 +43,25 @@ export async function gradeSubmittedAttempt(attempt, { requestId = "unknown" } =
     total + (selectedByQuestion.get(String(snapshot.questionId)) === snapshot.correctOptionId ? 1 : 0), 0);
   const maxScore = attempt.questionSnapshots.length;
 
-  const result = await Result.findOneAndUpdate(
-    { attemptId: attempt._id },
-    {
-      $set: {
-        examId: attempt.examId,
-        studentId: attempt.studentId,
-        score,
-        maxScore,
-        totalQuestions: maxScore,
-        submittedAt: attempt.submittedAt,
-      },
-      $setOnInsert: { attemptId: attempt._id },
-    },
-    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-  );
+  let result;
+  try {
+    result = await Result.create({
+      attemptId: attempt._id,
+      examId: attempt.examId,
+      studentId: attempt.studentId,
+      score,
+      maxScore,
+      totalQuestions: maxScore,
+      submittedAt: attempt.submittedAt,
+    });
+  } catch (error) {
+    // The unique attemptId index makes concurrent submit/result retries safe:
+    // only one request creates the result and writes the grading audit event.
+    if (error?.code !== 11000) throw error;
+    result = await Result.findOne({ attemptId: attempt._id });
+    if (!result) throw error;
+    return result;
+  }
 
   await AuditLog.create({
     actorId: attempt.studentId,

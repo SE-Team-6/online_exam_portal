@@ -6,6 +6,7 @@ import { getAttemptResult } from "../services/grading.service.js";
 import {
   startAttempt,
   saveAttemptAnswer,
+  saveAttemptAnswers,
   submitAttempt,
 } from "../services/attempt.service.js";
 
@@ -18,9 +19,23 @@ router.post(
     const attempt = await submitAttempt({
       attemptId: req.params.attemptId,
       studentId: req.user.id,
+      requestId: res.locals.requestId,
     });
 
     res.status(200).json({ attempt });
+  })
+);
+
+router.put(
+  "/:attemptId/answers",
+  asyncHandler(async (req, res) => {
+    const saved = await saveAttemptAnswers({
+      attemptId: req.params.attemptId,
+      answers: req.body?.answers,
+      studentId: req.user.id,
+    });
+
+    res.status(200).json(saved);
   })
 );
 

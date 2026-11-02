@@ -1,6 +1,6 @@
 
 import ExamManagement from "./pages/ExamManagement";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -193,11 +193,158 @@ function Register() {
 }
 
 function Student() {
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAvailableExams() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const data = await apiRequest("/student/exams");
+
+        if (active) {
+          setExams(Array.isArray(data.exams) ? data.exams : []);
+        }
+      } catch (err) {
+        if (active) {
+          setError(
+            err.message || "Unable to load available examinations."
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadAvailableExams();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function formatDate(date) {
+    if (!date) return "Not specified";
+
+    const parsed = new Date(date);
+
+    return Number.isNaN(parsed.getTime())
+      ? "Not specified"
+      : parsed.toLocaleString();
+  }
+
+  function formatDuration(seconds) {
+    if (!seconds) return "Not specified";
+
+    const minutes = Math.round(Number(seconds) / 60);
+    return `${minutes} minutes`;
+  }
+
   return (
-    <main>
-      <h1>Student Dashboard</h1>
-      <p><Link to="/student/exam">Start Exam</Link></p>
-      <p><Link to="/results">View Exam Results</Link></p>
+    <main className="student-dashboard">
+      <header className="student-dashboard-header">
+        <div>
+          <p className="eyebrow">STUDENT WORKSPACE</p>
+          <h1>Student Dashboard</h1>
+          <p>View your available examinations and results.</p>
+        </div>
+
+        <nav className="student-dashboard-actions">
+          <Link to="/results" className="student-action-link">
+            View Results
+          </Link>
+        </nav>
+      </header>
+
+      <section className="student-dashboard-content">
+        <div className="student-exams-heading">
+          <div>
+            <h2>Available Examinations</h2>
+            <p>Examinations currently available to you.</p>
+          </div>
+
+          <span className="student-exam-count">
+            {exams.length} {exams.length === 1 ? "Exam" : "Exams"}
+          </span>
+        </div>
+
+        {loading && (
+          <p className="student-state-message" role="status">
+            Loading available examinations...
+          </p>
+        )}
+
+        {!loading && error && (
+          <p className="student-state-message student-state-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && exams.length === 0 && (
+          <p className="student-state-message">
+            No examinations are currently available. Please check again later.
+          </p>
+        )}
+
+        {!loading && !error && exams.length > 0 && (
+          <div className="student-exams-grid">
+            {exams.map((exam) => (
+              <article
+                className="student-exam-card"
+                key={exam.examId}
+              >
+                <div className="student-exam-card-heading">
+                  <h3>{exam.title}</h3>
+                  <span className="student-exam-status">
+                    Available
+                  </span>
+                </div>
+
+                {exam.description && (
+                  <p>{exam.description}</p>
+                )}
+
+                <div className="student-exam-meta">
+                  <p>
+                    <strong>Duration:</strong>{" "}
+                    {formatDuration(exam.durationSeconds)}
+                  </p>
+
+                  <p>
+                    <strong>Starts:</strong>{" "}
+                    {formatDate(exam.startsAt)}
+                  </p>
+
+                  <p>
+                    <strong>Ends:</strong>{" "}
+                    {formatDate(exam.endsAt)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="student-preview-button"
+                  disabled
+                  title="The real exam attempt API is not available yet."
+                >
+                  Start Exam (Preview Only)
+                </button>
+
+                <small className="student-preview-note">
+                  Exam attempts are not enabled yet.
+                </small>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
@@ -213,7 +360,9 @@ function Admin() {
         <Link to="/admin/exams">Manage Exams</Link>
       </p>
       <p>
-        <Link to="/instructor-results">View Instructor Results &amp; Analytics</Link>
+        <Link to="/instructor-results">
+          View Instructor Results &amp; Analytics
+        </Link>
       </p>
     </main>
   );

@@ -610,3 +610,249 @@ main.auth-page [role="status"] {
     margin-top: 8px;
   }
 }
+
+/* ===== Sprint 2 Student Dashboard ===== */
+
+.student-dashboard {
+  width: min(1100px, calc(100% - 32px));
+  margin: 36px auto;
+  padding: 24px;
+}
+
+.student-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 28px;
+  margin-bottom: 30px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
+.student-dashboard-header h1 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.student-dashboard-header p {
+  margin-bottom: 0;
+  color: #475569;
+}
+
+.student-dashboard-header .eyebrow {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.student-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.student-action-link {
+  display: inline-block;
+  padding: 11px 18px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.student-action-link:hover {
+  background: #1d4ed8;
+}
+
+.student-dashboard-content {
+  margin-top: 24px;
+}
+
+.student-exams-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.student-exams-heading h2 {
+  margin-bottom: 6px;
+}
+
+.student-exams-heading p {
+  margin-top: 0;
+  color: #64748b;
+}
+
+.student-exam-count {
+  padding: 7px 13px;
+  border-radius: 20px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-exams-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.student-exam-card {
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.student-exam-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.student-exam-card h3 {
+  margin-top: 0;
+  color: #172554;
+}
+
+.student-exam-card > p {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.student-exam-status {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-exam-meta {
+  margin: 18px 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.student-exam-meta p {
+  margin: 8px 0;
+  color: #475569;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.student-preview-button {
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 8px;
+  background: #94a3b8;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.student-preview-button:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.student-preview-note {
+  display: block;
+  margin-top: 9px;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+}
+
+.student-state-message {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  text-align: center;
+}
+
+.student-state-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* High contrast accessibility */
+.high-contrast .student-dashboard-header,
+.high-contrast .student-exam-card,
+.high-contrast .student-exam-meta,
+.high-contrast .student-state-message {
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+.high-contrast .student-dashboard-header h1,
+.high-contrast .student-dashboard-header p,
+.high-contrast .student-exam-card h3,
+.high-contrast .student-exam-card p,
+.high-contrast .student-exam-meta p,
+.high-contrast .student-preview-note,
+.high-contrast .student-exams-heading p {
+  color: #ffffff;
+}
+
+.high-contrast .student-action-link,
+.high-contrast .student-preview-button {
+  background: #ffff00;
+  color: #000000;
+  border: 2px solid #ffffff;
+}
+
+.high-contrast .student-exam-status,
+.high-contrast .student-exam-count {
+  background: #ffff00;
+  color: #000000;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 700px) {
+  .student-dashboard {
+    width: calc(100% - 20px);
+    margin: 20px auto;
+    padding: 12px;
+  }
+
+  .student-dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .student-dashboard-header h1 {
+    font-size: 24px;
+  }
+
+  .student-exams-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-exams-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .student-exam-card-heading {
+    flex-direction: column;
+  }
+}

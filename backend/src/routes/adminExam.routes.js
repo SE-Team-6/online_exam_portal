@@ -3,13 +3,18 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
 import AuditLog from "../models/AuditLog.js";
-import { createExam, listExams } from "../services/exam.service.js";
+import {
+  createExam,
+  listExamsWithAttemptCounts,
+} from "../services/exam.service.js";
 
 const router = express.Router();
 router.use(requireAuth, requireRole("instructor", "admin"));
 
 router.get("/", asyncHandler(async (_req, res) => {
-  res.status(200).json({ exams: await listExams() });
+  res.status(200).json({
+    exams: await listExamsWithAttemptCounts(),
+  });
 }));
 
 router.post("/", asyncHandler(async (req, res) => {

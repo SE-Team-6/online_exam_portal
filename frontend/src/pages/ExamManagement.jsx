@@ -8,6 +8,9 @@ function ExamManagement() {
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [liveExams, setLiveExams] = useState([]);
+  const [loadingLiveExams, setLoadingLiveExams] = useState(true);
+  const [liveExamsError, setLiveExamsError] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -44,6 +47,38 @@ function ExamManagement() {
 
     return () => {
       active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLiveExams() {
+      try {
+        const data = await apiRequest("/admin/exams");
+
+        if (active) {
+          setLiveExams(Array.isArray(data.exams) ? data.exams : []);
+          setLiveExamsError("");
+        }
+      } catch (err) {
+        if (active) {
+          setLiveExamsError(
+            err.message || "Unable to load exam attempt counts."
+          );
+        }
+      } finally {
+        if (active) setLoadingLiveExams(false);
+      }
+    }
+
+    loadLiveExams();
+
+    const refreshTimer = setInterval(loadLiveExams, 10_000);
+
+    return () => {
+      active = false;
+      clearInterval(refreshTimer);
     };
   }, []);
 
@@ -90,7 +125,7 @@ function ExamManagement() {
       return;
     }
 
-    // Temporary preview only; the exam scheduling API is not confirmed.
+    // This is a local preview only; it does not save the exam to the backend.
     const exam = {
       id: crypto.randomUUID(),
       title: form.title.trim(),
@@ -179,8 +214,7 @@ function ExamManagement() {
           ) : (
             <div className="exam-question-list">
               {questions.map((question) => {
-                const id =
-                  question._id ?? question.id ?? question.questionId;
+                const id = question._id ?? question.id ?? question.questionId;
 
                 if (!id) return null;
 
@@ -218,7 +252,50 @@ function ExamManagement() {
       </section>
 
       <section className="exam-panel">
-        <h2>Exam list</h2>
+        <h2>Live attempt counts</h2>
+        <p>Counts refresh every 10 seconds.</p>
+
+        {loadingLiveExams ? (
+          <p>Loading exams...</p>
+        ) : liveExamsError ? (
+          <p role="alert">{liveExamsError}</p>
+        ) : liveExams.length === 0 ? (
+          <p>No saved exams are available.</p>
+        ) : (
+          <div className="exam-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Exam</th>
+                  <th>In progress</th>
+                  <th>Submitted</th>
+                  <th>Expired</th>
+                  <th>Total attempts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveExams.map((exam) => {
+                  const counts = exam.attemptCounts ?? {};
+
+                  return (
+                    <tr key={exam.id}>
+                      <td>{exam.title}</td>
+                      <td>{counts.inProgress ?? 0}</td>
+                      <td>{counts.submitted ?? 0}</td>
+                      <td>{counts.expired ?? 0}</td>
+                      <td>{counts.total ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="exam-panel">
+        <h2>Local exam preview</h2>
+        <p>These preview exams have not been saved to the server.</p>
 
         {exams.length === 0 ? (
           <p>No exams in this preview yet.</p>
@@ -241,7 +318,7 @@ function ExamManagement() {
                     <td>{formatDate(exam.startAt)}</td>
                     <td>{exam.durationMinutes} min</td>
                     <td>{exam.questionIds.length}</td>
-                    <td>Unavailable — backend API pending</td>
+                    <td>Unavailable — preview is not saved</td>
                   </tr>
                 ))}
               </tbody>

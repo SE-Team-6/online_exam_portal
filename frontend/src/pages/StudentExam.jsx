@@ -25,6 +25,9 @@ function StudentExam({ initialAttempt }) {
   const previousFocusRef = useRef(null);
 
   const startTime = attempt?.expiresAt;
+  const invalidExpiry = Boolean(
+    startTime && Number.isNaN(new Date(startTime).getTime())
+  );
 
   const handleSubmit = useCallback(async (automatic = false) => {
     if (!attempt?.attemptId || submittingRef.current) return;
@@ -124,10 +127,7 @@ function StudentExam({ initialAttempt }) {
 
     const expiryTime = new Date(startTime).getTime();
 
-    if (Number.isNaN(expiryTime)) {
-      setMessage("Invalid exam expiry time.");
-      return;
-    }
+    if (Number.isNaN(expiryTime)) return;
 
     let expired = false;
 
@@ -216,9 +216,9 @@ function StudentExam({ initialAttempt }) {
         </span>
       </p>
 
-      {message && (
+      {(message || invalidExpiry) && (
         <p role="status" aria-live="polite">
-          {message}
+          {message || "Invalid exam expiry time."}
         </p>
       )}
 

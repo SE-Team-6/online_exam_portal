@@ -44,3 +44,8 @@ The only specific runtime deviation established by the supplied Sprint 2 evidenc
 3. Update defect references and statuses from GitHub.
 4. Have the developer/team lead confirm that the document matches the demo.
 5. Do not claim that security, performance, availability or load targets pass without test evidence.
+
+
+## 6. Performance test evidence (Issue #32)
+
+A local benchmark of GET /api/health/ recorded 100 measured requests at concurrency 5, with 100 successful responses, an average response time of 1.18 ms, and p90 of 1.85 ms. This result applies only to that endpoint and local configuration. The 200-concurrent-user scenario, protected endpoints, sustained load, and deployment-environment performance remain untested; EXAM-NF-001 is not fully verified.

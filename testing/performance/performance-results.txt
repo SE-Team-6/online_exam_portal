@@ -1,0 +1,13 @@
+Endpoint: http://localhost:3001/api/health/
+Warming up with 10 requests...
+Measuring 100 requests at concurrency 5...
+
+--- PERFORMANCE TEST RESULTS ---
+Measured requests: 100
+Successful (HTTP 200): 100
+Failed: 0
+Failed warm-up requests: 0
+Total measurement time: 0.04 seconds
+Average successful response time: 1.18 ms
+p90 successful response time: 1.85 ms
+Target (p90 <= 2000 ms, no failed requests): PASS

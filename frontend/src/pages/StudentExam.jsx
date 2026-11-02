@@ -5,11 +5,9 @@ import {
   submitAttempt,
 } from "../services/attemptService";
 
-function StudentExam({ examId, initialAttempt }) {
-  const [attempt, setAttempt] = useState(initialAttempt || null);
-  const [questions, setQuestions] = useState(
-    initialAttempt?.questions || []
-  );
+function StudentExam({ initialAttempt }) {
+  const [attempt] = useState(initialAttempt || null);
+  const [questions] = useState(initialAttempt?.questions || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [saveStatus, setSaveStatus] = useState({});
@@ -22,6 +20,9 @@ function StudentExam({ examId, initialAttempt }) {
   const submittingRef = useRef(false);
   const answersRef = useRef({});
   const pendingSavesRef = useRef(new Map());
+  const submitButtonRef = useRef(null);
+  const cancelButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   const startTime = attempt?.expiresAt;
 
@@ -150,6 +151,43 @@ function StudentExam({ examId, initialAttempt }) {
     return () => clearInterval(timerId);
   }, [startTime, submitted, handleSubmit]);
 
+  useEffect(() => {
+    if (showSubmitWarning) {
+      cancelButtonRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showSubmitWarning]);
+
+  function openSubmitWarning(event) {
+    previousFocusRef.current = event.currentTarget;
+    setShowSubmitWarning(true);
+  }
+
+  function handleDialogKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setShowSubmitWarning(false);
+      return;
+    }
+
+    if (event.key === "Tab") {
+      const firstButton = cancelButtonRef.current;
+      const lastButton = submitButtonRef.current;
+
+      if (!firstButton || !lastButton) return;
+
+      if (event.shiftKey && document.activeElement === firstButton) {
+        event.preventDefault();
+        lastButton.focus();
+      } else if (!event.shiftKey && document.activeElement === lastButton) {
+        event.preventDefault();
+        firstButton.focus();
+      }
+    }
+  }
+
   const currentQuestion = questions[currentIndex];
 
   if (!attempt) {
@@ -198,6 +236,9 @@ function StudentExam({ examId, initialAttempt }) {
                 disabled={submitted || submitting}
                 onClick={() => setCurrentIndex(index)}
                 aria-current={index === currentIndex ? "step" : undefined}
+                aria-label={`Go to question ${index + 1}. ${
+                  answers[questionId] ? "Answered" : "Unanswered"
+                }${index === currentIndex ? ". Current question" : ""}`}
               >
                 {index + 1} -{" "}
                 {answers[questionId] ? "Answered" : "Unanswered"}
@@ -209,7 +250,7 @@ function StudentExam({ examId, initialAttempt }) {
 
       {currentQuestion && (
         <section aria-labelledby="current-question-heading">
-          <h2 id="current-question-heading">
+          <h2 id="current-question-heading" tabIndex={-1}>
             Question {currentIndex + 1} of {questions.length}
           </h2>
 
@@ -288,7 +329,7 @@ function StudentExam({ examId, initialAttempt }) {
         <button
           type="button"
           disabled={submitting}
-          onClick={() => setShowSubmitWarning(true)}
+          onClick={openSubmitWarning}
         >
           Submit Exam
         </button>
@@ -297,8 +338,10 @@ function StudentExam({ examId, initialAttempt }) {
       {showSubmitWarning && !submitted && (
         <section
           role="alertdialog"
+          aria-modal="true"
           aria-labelledby="submit-warning-heading"
           aria-describedby="submit-warning-description"
+          onKeyDown={handleDialogKeyDown}
         >
           <h2 id="submit-warning-heading">Confirm submission</h2>
 
@@ -307,6 +350,7 @@ function StudentExam({ examId, initialAttempt }) {
           </p>
 
           <button
+            ref={submitButtonRef}
             type="button"
             disabled={submitting}
             onClick={() => handleSubmit(false)}
@@ -315,6 +359,7 @@ function StudentExam({ examId, initialAttempt }) {
           </button>
 
           <button
+            ref={cancelButtonRef}
             type="button"
             disabled={submitting}
             onClick={() => setShowSubmitWarning(false)}

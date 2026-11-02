@@ -294,22 +294,36 @@ function ExamManagement() {
                   <th>End time</th>
                   <th>Duration</th>
                   <th>Questions</th>
+                  <th>In progress</th>
+                  <th>Submitted</th>
+                  <th>Expired</th>
+                  <th>Total attempts</th>
                 </tr>
               </thead>
               <tbody>
-                {exams.map((exam) => (
-                  <tr key={getExamId(exam)}>
-                    <td>{exam.title}</td>
-                    <td>{formatDate(exam.startsAt)}</td>
-                    <td>{formatDate(exam.endsAt)}</td>
-                    <td>
-                      {Math.round(
-                        Number(exam.durationSeconds ?? 0) / 60
-                      )} min
-                    </td>
-                    <td>{exam.questionIds?.length ?? 0}</td>
-                  </tr>
-                ))}
+                {exams.map((exam) => {
+                  const counts = exam.attemptCounts ?? {};
+
+                  return (
+                    <tr key={getExamId(exam)}>
+                      <td>{exam.title}</td>
+                      <td>{formatDate(exam.startsAt)}</td>
+                      <td>{formatDate(exam.endsAt)}</td>
+                      <td>
+                        {Math.round(
+                          Number(exam.durationSeconds ?? 0) / 60
+                        )} min
+                      </td>
+                      <td>
+                        {exam.questionCount ?? exam.questionIds?.length ?? 0}
+                      </td>
+                      <td>{counts.inProgress ?? 0}</td>
+                      <td>{counts.submitted ?? 0}</td>
+                      <td>{counts.expired ?? 0}</td>
+                      <td>{counts.total ?? 0}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

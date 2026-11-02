@@ -1,53 +1,135 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  saveAttemptAnswer,
+  submitAttempt,
+} from "../services/attemptService";
 
-const sampleQuestions = [
-  {
-    id: 1,
-    text: "What does HTML stand for?",
-    options: [
-      "Hyper Text Markup Language",
-      "High Text Machine Language",
-      "Hyper Transfer Markup Language",
-      "Home Tool Markup Language",
-    ],
-  },
-  {
-    id: 2,
-    text: "Which language is used to style web pages?",
-    options: ["Python", "CSS", "SQL", "Java"],
-  },
-  {
-    id: 3,
-    text: "Which one is a JavaScript library?",
-    options: ["React", "MongoDB", "Express", "MySQL"],
-  },
-];
-
-function StudentExam() {
-  const [questions] = useState(sampleQuestions);
+function StudentExam({ initialAttempt }) {
+  const [attempt] = useState(initialAttempt || null);
+  const [questions] = useState(initialAttempt?.questions || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [saveStatus, setSaveStatus] = useState({});
   const [timeLeft, setTimeLeft] = useState(null);
-  const [saveStatus, setSaveStatus] = useState("Not saved");
   const [message, setMessage] = useState("");
   const [showSubmitWarning, setShowSubmitWarning] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
+  const submittingRef = useRef(false);
+  const answersRef = useRef({});
+  const pendingSavesRef = useRef(new Map());
   const submitButtonRef = useRef(null);
   const cancelButtonRef = useRef(null);
   const previousFocusRef = useRef(null);
 
-  const hasExpiryTime = Boolean(sessionStorage.getItem("expiresAt"));
+  const startTime = attempt?.expiresAt;
+  const invalidExpiry = Boolean(
+    startTime && Number.isNaN(new Date(startTime).getTime())
+  );
+
+  const handleSubmit = useCallback(async (automatic = false) => {
+    if (!attempt?.attemptId || submittingRef.current) return;
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    setMessage(automatic ? "Time is up. Submitting exam..." : "Submitting exam...");
+
+    try {
+      // Wait for any pending answer saves before submitting.
+      await Promise.allSettled(
+        Array.from(pendingSavesRef.current.values())
+      );
+
+      const data = await submitAttempt(attempt.attemptId);
+
+      setSubmitted(true);
+      setShowSubmitWarning(false);
+      setMessage(
+        automatic
+          ? "Time is up. Your exam was submitted automatically."
+          : "Your exam was submitted successfully."
+      );
+
+      return data;
+    } catch (error) {
+      submittingRef.current = false;
+      setMessage(error.message || "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [attempt]);
+
+  const saveAnswer = useCallback(async (questionId, optionId) => {
+    if (!attempt?.attemptId || submittingRef.current) return;
+
+    const previousSave = pendingSavesRef.current.get(questionId);
+
+    const savePromise = (async () => {
+      if (previousSave) await previousSave.catch(() => {});
+
+      setSaveStatus((previous) => ({
+        ...previous,
+        [questionId]: "Saving...",
+      }));
+
+      try {
+        await saveAttemptAnswer(
+          attempt.attemptId,
+          questionId,
+          optionId
+        );
+
+        setSaveStatus((previous) => ({
+          ...previous,
+          [questionId]: "Saved",
+        }));
+      } catch (error) {
+        setSaveStatus((previous) => ({
+          ...previous,
+          [questionId]: "Failed",
+        }));
+        setMessage(error.message || "Answer could not be saved.");
+        throw error;
+      }
+    })();
+
+    pendingSavesRef.current.set(questionId, savePromise);
+
+    try {
+      await savePromise;
+    } catch {
+      // Failure is displayed beside the question for manual retry.
+    } finally {
+      if (pendingSavesRef.current.get(questionId) === savePromise) {
+        pendingSavesRef.current.delete(questionId);
+      }
+    }
+  }, [attempt]);
+
+  function selectAnswer(questionId, optionId) {
+    if (submitted || submitting) return;
+
+    const updatedAnswers = {
+      ...answersRef.current,
+      [questionId]: optionId,
+    };
+
+    answersRef.current = updatedAnswers;
+    setAnswers(updatedAnswers);
+
+    saveAnswer(questionId, optionId);
+  }
 
   useEffect(() => {
-    const expiresAt = sessionStorage.getItem("expiresAt");
+    if (!startTime || submitted) return;
 
-    if (!expiresAt) return;
-
-    const expiryTime = new Date(expiresAt).getTime();
+    const expiryTime = new Date(startTime).getTime();
 
     if (Number.isNaN(expiryTime)) return;
+
+    let expired = false;
 
     function updateTimer() {
       const remaining = Math.max(
@@ -57,10 +139,9 @@ function StudentExam() {
 
       setTimeLeft(remaining);
 
-      if (remaining === 0) {
-        setSubmitted(true);
-        setShowSubmitWarning(false);
-        setMessage("Time is up. The exam must be submitted.");
+      if (remaining === 0 && !expired) {
+        expired = true;
+        handleSubmit(true);
       }
     }
 
@@ -68,7 +149,7 @@ function StudentExam() {
     const timerId = setInterval(updateTimer, 1000);
 
     return () => clearInterval(timerId);
-  }, []);
+  }, [startTime, submitted, handleSubmit]);
 
   useEffect(() => {
     if (showSubmitWarning) {
@@ -79,37 +160,15 @@ function StudentExam() {
     }
   }, [showSubmitWarning]);
 
-  function selectAnswer(questionId, option) {
-    if (submitted) return;
-
-    setAnswers((previous) => ({
-      ...previous,
-      [questionId]: option,
-    }));
-
-    setSaveStatus("Unsaved");
-    setMessage("Answer changed. Backend save API is not connected yet.");
-  }
-
   function openSubmitWarning(event) {
     previousFocusRef.current = event.currentTarget;
     setShowSubmitWarning(true);
   }
 
-  function cancelSubmit() {
-    setShowSubmitWarning(false);
-  }
-
-  function handleSubmit() {
-    setSubmitted(true);
-    setShowSubmitWarning(false);
-    setMessage("Submission UI complete. Connect the backend submit API.");
-  }
-
   function handleDialogKeyDown(event) {
     if (event.key === "Escape") {
       event.preventDefault();
-      cancelSubmit();
+      setShowSubmitWarning(false);
       return;
     }
 
@@ -122,10 +181,7 @@ function StudentExam() {
       if (event.shiftKey && document.activeElement === firstButton) {
         event.preventDefault();
         lastButton.focus();
-      } else if (
-        !event.shiftKey &&
-        document.activeElement === lastButton
-      ) {
+      } else if (!event.shiftKey && document.activeElement === lastButton) {
         event.preventDefault();
         firstButton.focus();
       }
@@ -134,8 +190,19 @@ function StudentExam() {
 
   const currentQuestion = questions[currentIndex];
 
+  if (!attempt) {
+    return (
+      <main>
+        <h1>Student Exam</h1>
+        <p role="alert">
+          No active exam attempt was provided.
+        </p>
+      </main>
+    );
+  }
+
   return (
-    <main className="student-exam">
+    <main>
       <h1>Student Exam</h1>
 
       <p>
@@ -149,38 +216,35 @@ function StudentExam() {
         </span>
       </p>
 
-      <p role="status" aria-live="polite" aria-atomic="true">
-        Save status: {saveStatus}
-      </p>
-
-      {(message ||
-        (!hasExpiryTime
-          ? "Exam expiry time is unavailable. Connect the exam start API."
-          : "")) && (
-        <p role="status" aria-live="polite" aria-atomic="true">
-          {message ||
-            "Exam expiry time is unavailable. Connect the exam start API."}
+      {(message || invalidExpiry) && (
+        <p role="status" aria-live="polite">
+          {message || "Invalid exam expiry time."}
         </p>
       )}
 
-      <section aria-labelledby="question-navigator-heading">
-        <h2 id="question-navigator-heading">Question Navigator</h2>
+      <section aria-label="Question navigator">
+        <h2>Question Navigator</h2>
 
         <div className="question-navigator">
-          {questions.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              disabled={submitted}
-              onClick={() => setCurrentIndex(index)}
-              aria-current={index === currentIndex ? "step" : undefined}
-              aria-label={`Go to question ${index + 1}. ${
-                answers[item.id] ? "Answered" : "Unanswered"
-              }${index === currentIndex ? ". Current question" : ""}`}
-            >
-              {index + 1} - {answers[item.id] ? "Answered" : "Unanswered"}
-            </button>
-          ))}
+          {questions.map((question, index) => {
+            const questionId = question.questionId;
+
+            return (
+              <button
+                key={questionId}
+                type="button"
+                disabled={submitted || submitting}
+                onClick={() => setCurrentIndex(index)}
+                aria-current={index === currentIndex ? "step" : undefined}
+                aria-label={`Go to question ${index + 1}. ${
+                  answers[questionId] ? "Answered" : "Unanswered"
+                }${index === currentIndex ? ". Current question" : ""}`}
+              >
+                {index + 1} -{" "}
+                {answers[questionId] ? "Answered" : "Unanswered"}
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -190,52 +254,83 @@ function StudentExam() {
             Question {currentIndex + 1} of {questions.length}
           </h2>
 
-          <fieldset disabled={submitted}>
-            <legend>{currentQuestion.text}</legend>
+          <fieldset disabled={submitted || submitting}>
+            <legend>{currentQuestion.stem}</legend>
 
             {currentQuestion.options.map((option) => (
               <label
-                key={option}
+                key={option.optionId}
                 style={{ display: "block", margin: "12px 0" }}
               >
                 <input
                   type="radio"
-                  name={`question-${currentQuestion.id}`}
-                  value={option}
-                  checked={answers[currentQuestion.id] === option}
-                  onChange={() =>
-                    selectAnswer(currentQuestion.id, option)
+                  name={`question-${currentQuestion.questionId}`}
+                  value={option.optionId}
+                  checked={
+                    answers[currentQuestion.questionId] === option.optionId
                   }
-                />{" "}
-                {option}
+                  onChange={() =>
+                    selectAnswer(
+                      currentQuestion.questionId,
+                      option.optionId
+                    )
+                  }
+                />
+                {" "}{option.text}
               </label>
             ))}
           </fieldset>
 
+          <p role="status">
+            Save status:{" "}
+            {saveStatus[currentQuestion.questionId] || "Not saved"}
+          </p>
+
+          {saveStatus[currentQuestion.questionId] === "Failed" && (
+            <button
+              type="button"
+              disabled={submitted || submitting}
+              onClick={() =>
+                saveAnswer(
+                  currentQuestion.questionId,
+                  answers[currentQuestion.questionId]
+                )
+              }
+            >
+              Retry saving answer
+            </button>
+          )}
+
           <div className="exam-navigation">
             <button
               type="button"
-              disabled={currentIndex === 0 || submitted}
+              disabled={currentIndex === 0 || submitted || submitting}
               onClick={() => setCurrentIndex((index) => index - 1)}
             >
-              Previous question
+              Previous
             </button>
 
             <button
               type="button"
               disabled={
-                currentIndex === questions.length - 1 || submitted
+                currentIndex === questions.length - 1 ||
+                submitted ||
+                submitting
               }
               onClick={() => setCurrentIndex((index) => index + 1)}
             >
-              Next question
+              Next
             </button>
           </div>
         </section>
       )}
 
       {!submitted && (
-        <button type="button" onClick={openSubmitWarning}>
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={openSubmitWarning}
+        >
           Submit Exam
         </button>
       )}
@@ -257,17 +352,19 @@ function StudentExam() {
           <button
             ref={submitButtonRef}
             type="button"
-            onClick={handleSubmit}
+            disabled={submitting}
+            onClick={() => handleSubmit(false)}
           >
-            Yes, submit
+            {submitting ? "Submitting..." : "Yes, submit"}
           </button>
 
           <button
             ref={cancelButtonRef}
             type="button"
-            onClick={cancelSubmit}
+            disabled={submitting}
+            onClick={() => setShowSubmitWarning(false)}
           >
-            Cancel submission
+            Cancel
           </button>
         </section>
       )}

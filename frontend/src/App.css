@@ -769,6 +769,20 @@ main.auth-page [role="status"] {
   cursor: not-allowed;
 }
 
+.student-start-button {
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.student-start-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
 .student-preview-note {
   display: block;
   margin-top: 9px;
@@ -813,7 +827,8 @@ main.auth-page [role="status"] {
 }
 
 .high-contrast .student-action-link,
-.high-contrast .student-preview-button {
+.high-contrast .student-preview-button,
+.high-contrast .student-start-button {
   background: #ffff00;
   color: #000000;
   border: 2px solid #ffffff;

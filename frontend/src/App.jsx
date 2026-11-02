@@ -8,8 +8,10 @@ import {
   Navigate,
   Link,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { apiRequest } from "./services/api";
+import { startAttempt } from "./services/attemptService";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
 import InstructorResults from "./pages/InstructorResults";
@@ -193,17 +195,16 @@ function Register() {
 }
 
 function Student() {
+  const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [startingExamId, setStartingExamId] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
     async function loadAvailableExams() {
-      setLoading(true);
-      setError("");
-
       try {
         const data = await apiRequest("/student/exams");
 
@@ -229,6 +230,26 @@ function Student() {
       active = false;
     };
   }, []);
+
+  async function handleStartExam(examId) {
+    setError("");
+    setStartingExamId(examId);
+
+    try {
+      const data = await startAttempt(examId);
+      const attempt = data.attempt;
+
+      if (!attempt?.attemptId || !attempt?.expiresAt || !attempt?.questions) {
+        throw new Error("The server returned incomplete exam attempt details.");
+      }
+
+      navigate("/student/exam", { state: { attempt } });
+    } catch (err) {
+      setError(err.message || "Unable to start the exam.");
+    } finally {
+      setStartingExamId(null);
+    }
+  }
 
   function formatDate(date) {
     if (!date) return "Not specified";
@@ -330,16 +351,12 @@ function Student() {
 
                 <button
                   type="button"
-                  className="student-preview-button"
-                  disabled
-                  title="The real exam attempt API is not available yet."
+                  className="student-start-button"
+                  disabled={startingExamId !== null}
+                  onClick={() => handleStartExam(exam.examId)}
                 >
-                  Start Exam (Preview Only)
+                  {startingExamId === exam.examId ? "Starting..." : "Start Exam"}
                 </button>
-
-                <small className="student-preview-note">
-                  Exam attempts are not enabled yet.
-                </small>
               </article>
             ))}
           </div>
@@ -347,6 +364,11 @@ function Student() {
       </section>
     </main>
   );
+}
+
+function StudentExamRoute() {
+  const location = useLocation();
+  return <StudentExam initialAttempt={location.state?.attempt} />;
 }
 
 function Admin() {
@@ -419,7 +441,7 @@ function App() {
             path="/student/exam"
             element={
               <ProtectedRoute allowedRoles={["student"]}>
-                <StudentExam />
+                <StudentExamRoute />
               </ProtectedRoute>
             }
           />

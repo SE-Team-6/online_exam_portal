@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -6,10 +7,14 @@ import {
   Navigate,
   Link,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
+
 import { apiRequest } from "./services/api";
+import { startAttempt } from "./services/attemptService";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuestionBank from "./pages/QuestionBank";
+import StudentExam from "./pages/StudentExam";
 
 function Login() {
   const navigate = useNavigate();
@@ -39,7 +44,9 @@ function Login() {
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", role);
 
-      navigate(role === "student" ? "/student" : "/admin", { replace: true });
+      navigate(role === "student" ? "/student" : "/admin", {
+        replace: true,
+      });
     } catch (err) {
       if (err.status === 401) {
         setError("Invalid email or password. Please try again.");
@@ -85,6 +92,7 @@ function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
+
       <p>
         Don't have an account? <Link to="/register">Register</Link>
       </p>
@@ -168,6 +176,7 @@ function Register() {
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
+
       <p>
         Already registered? <Link to="/login">Login</Link>
       </p>
@@ -176,11 +185,97 @@ function Register() {
 }
 
 function Student() {
+  const navigate = useNavigate();
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [startingExamId, setStartingExamId] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadExams() {
+      try {
+        const data = await apiRequest("/student/exams");
+        setExams(data.exams || []);
+      } catch (err) {
+        setError(err.message || "Unable to load available exams.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadExams();
+  }, []);
+
+  async function handleStartExam(examId) {
+    setError("");
+    setStartingExamId(examId);
+
+    try {
+      const data = await startAttempt(examId);
+      const attempt = data.attempt;
+
+      if (!attempt?.attemptId || !attempt?.expiresAt || !attempt?.questions) {
+        throw new Error("The server returned incomplete exam attempt details.");
+      }
+
+      navigate("/student/exam", {
+        state: { attempt },
+      });
+    } catch (err) {
+      setError(err.message || "Unable to start the exam.");
+    } finally {
+      setStartingExamId(null);
+    }
+  }
+
   return (
     <main>
       <h1>Student Dashboard</h1>
+      <h2>Available Exams</h2>
+
+      {loading && <p role="status">Loading available exams...</p>}
+      {error && <p role="alert">{error}</p>}
+
+      {!loading && !error && exams.length === 0 && (
+        <p>No exams are currently available.</p>
+      )}
+
+      {exams.map((exam) => (
+        <article key={exam.examId}>
+          <h3>{exam.title}</h3>
+          <p>{exam.description || "No description available."}</p>
+          <p>
+            Duration: {Math.ceil(exam.durationSeconds / 60)} minutes
+          </p>
+          <p>
+            Starts: {exam.startsAt
+              ? new Date(exam.startsAt).toLocaleString()
+              : "Available now"}
+          </p>
+          <p>
+            Ends: {exam.endsAt
+              ? new Date(exam.endsAt).toLocaleString()
+              : "No scheduled end"}
+          </p>
+
+          <button
+            type="button"
+            disabled={startingExamId !== null}
+            onClick={() => handleStartExam(exam.examId)}
+          >
+            {startingExamId === exam.examId ? "Starting..." : "Start Exam"}
+          </button>
+        </article>
+      ))}
     </main>
   );
+}
+
+function StudentExamRoute() {
+  const location = useLocation();
+  const attempt = location.state?.attempt;
+
+  return <StudentExam initialAttempt={attempt} />;
 }
 
 function Admin() {
@@ -207,6 +302,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["student"]}>
               <Student />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/exam"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <StudentExamRoute />
             </ProtectedRoute>
           }
         />

@@ -1,174 +1,198 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiRequest } from "../services/api";
+
+const emptyForm = {
+  stem: "",
+  correctOptionId: "a",
+  options: [
+    { optionId: "a", text: "" },
+    { optionId: "b", text: "" },
+    { optionId: "c", text: "" },
+    { optionId: "d", text: "" },
+  ],
+  tags: [""],
+  difficulty: "Easy",
+};
 
 function QuestionBank() {
   const [questions, setQuestions] = useState([]);
-  const [form, setForm] = useState({
-    stem: "",
-    correctAnswer: "",
-    distractors: ["", "", ""],
-    topic: "",
-    difficulty: "Easy",
-  });
+  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+  async function loadQuestions() {
+    try {
+      const data = await apiRequest("/admin/questions");
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setError("");
+    } catch (requestError) {
+      setError(requestError.message || "Unable to load questions.");
+    }
   }
 
-  function handleDistractorChange(index, value) {
+  useEffect(() => {
+    let active = true;
+    async function loadOnMount() {
+      try {
+        const data = await apiRequest("/admin/questions");
+        if (active) setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      } catch (requestError) {
+        if (active) setError(requestError.message || "Unable to load questions.");
+      }
+    }
+    loadOnMount();
+    return () => { active = false; };
+  }, []);
+
+  function updateOption(index, text) {
     setForm((previous) => ({
       ...previous,
-      distractors: previous.distractors.map((answer, i) =>
-        i === index ? value : answer
+      options: previous.options.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, text } : option
       ),
     }));
   }
 
   function resetForm() {
-    setForm({
-      stem: "",
-      correctAnswer: "",
-      distractors: ["", "", ""],
-      topic: "",
-      difficulty: "Easy",
-    });
+    setForm(emptyForm);
     setEditingId(null);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-
-    const question = { ...form, id: editingId ?? Date.now() };
-
-    if (editingId !== null) {
-      setQuestions((previous) =>
-        previous.map((item) => (item.id === editingId ? question : item))
-      );
-    } else {
-      setQuestions((previous) => [...previous, question]);
+    setError("");
+    setStatusMessage("");
+    const payload = { ...form, tags: form.tags.filter(Boolean) };
+    try {
+      const wasEditing = Boolean(editingId);
+      const endpoint = wasEditing ? `/admin/questions/${editingId}` : "/admin/questions";
+      await apiRequest(endpoint, {
+        method: wasEditing ? "PUT" : "POST",
+        body: JSON.stringify(payload),
+      });
+      resetForm();
+      await loadQuestions();
+      setStatusMessage(wasEditing ? "Question updated successfully." : "Question added successfully.");
+    } catch (requestError) {
+      setError(requestError.message || "Unable to save the question.");
     }
+  }
 
-    resetForm();
+  async function handleDelete(id) {
+    if (!window.confirm("Are you sure you want to delete this question?")) return;
+    setError("");
+    try {
+      await apiRequest(`/admin/questions/${id}`, { method: "DELETE" });
+      if (editingId === id) resetForm();
+      await loadQuestions();
+      setStatusMessage("Question deleted successfully.");
+    } catch (requestError) {
+      setError(requestError.message || "Unable to delete the question.");
+    }
   }
 
   function handleEdit(question) {
     setForm({
       stem: question.stem,
-      correctAnswer: question.correctAnswer,
-      distractors: [...question.distractors],
-      topic: question.topic,
+      correctOptionId: question.correctOptionId,
+      options: question.options,
+      tags: question.tags?.length ? question.tags : [""],
       difficulty: question.difficulty,
     });
-    setEditingId(question.id);
+    setEditingId(question._id);
+    setStatusMessage(`Editing question: ${question.stem}`);
   }
 
-  function handleDelete(id) {
-    if (window.confirm("Are you sure you want to delete this question?")) {
-      setQuestions((previous) => previous.filter((item) => item.id !== id));
-    }
+  function handleCancel() {
+    resetForm();
+    setStatusMessage("Editing cancelled.");
   }
 
   return (
     <main className="question-bank">
       <h1>Question Bank Management</h1>
+      {error && <p role="alert">{error}</p>}
+      <p role="status" aria-live="polite" aria-atomic="true">{statusMessage}</p>
 
-      <form onSubmit={handleSubmit}>
-        <h2>{editingId !== null ? "Edit Question" : "Create Question"}</h2>
+      <form onSubmit={handleSubmit} aria-labelledby="question-form-heading">
+        <h2 id="question-form-heading">{editingId ? "Edit Question" : "Create Question"}</h2>
 
-        <label>
-          Question
-          <textarea
-            name="stem"
-            value={form.stem}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        <label htmlFor="question-stem">Question</label>
+        <textarea
+          id="question-stem"
+          name="stem"
+          value={form.stem}
+          onChange={(event) => setForm({ ...form, stem: event.target.value })}
+          required
+        />
 
-        <label>
-          Correct Answer
-          <input
-            name="correctAnswer"
-            value={form.correctAnswer}
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        {form.distractors.map((answer, index) => (
-          <label key={index}>
-            Distractor {index + 1}
+        {form.options.map((option, index) => (
+          <div key={option.optionId}>
+            <label htmlFor={`option-${option.optionId}`}>Option {option.optionId}</label>
             <input
-              value={answer}
-              onChange={(event) =>
-                handleDistractorChange(index, event.target.value)
-              }
+              id={`option-${option.optionId}`}
+              name={`option-${option.optionId}`}
+              value={option.text}
+              onChange={(event) => updateOption(index, event.target.value)}
               required
             />
-          </label>
+          </div>
         ))}
 
-        <label>
-          Topic
-          <input
-            name="topic"
-            value={form.topic}
-            onChange={handleChange}
-            placeholder="e.g. DBMS"
-            required
-          />
-        </label>
+        <label htmlFor="correct-option">Correct option</label>
+        <select
+          id="correct-option"
+          name="correctOptionId"
+          value={form.correctOptionId}
+          onChange={(event) => setForm({ ...form, correctOptionId: event.target.value })}
+        >
+          {form.options.map((option) => (
+            <option key={option.optionId} value={option.optionId}>{option.optionId}</option>
+          ))}
+        </select>
 
-        <label>
-          Difficulty
-          <select
-            name="difficulty"
-            value={form.difficulty}
-            onChange={handleChange}
-          >
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
-          </select>
-        </label>
+        <label htmlFor="question-tags">Tags</label>
+        <input
+          id="question-tags"
+          name="tags"
+          value={form.tags[0]}
+          onChange={(event) => setForm({ ...form, tags: [event.target.value] })}
+        />
 
-        <button type="submit">
-          {editingId !== null ? "Update Question" : "Add Question"}
-        </button>
+        <label htmlFor="question-difficulty">Difficulty</label>
+        <select
+          id="question-difficulty"
+          name="difficulty"
+          value={form.difficulty}
+          onChange={(event) => setForm({ ...form, difficulty: event.target.value })}
+        >
+          <option>Easy</option>
+          <option>Medium</option>
+          <option>Hard</option>
+        </select>
 
-        {editingId !== null && (
-          <button type="button" onClick={resetForm}>
-            Cancel
-          </button>
-        )}
+        <button type="submit">{editingId ? "Update Question" : "Add Question"}</button>
+        {editingId && <button type="button" onClick={handleCancel}>Cancel editing</button>}
       </form>
 
-      <h2>Questions ({questions.length})</h2>
-
+      <h2 id="question-list-heading">Questions ({questions.length})</h2>
       {questions.length === 0 && <p>No questions added yet.</p>}
-
-      {questions.map((question) => (
-        <article key={question.id} className="question-card">
-          <h3>{question.stem}</h3>
-          <p>
-            <strong>Correct answer:</strong> {question.correctAnswer}
-          </p>
-          <p>
-            <strong>Other options:</strong> {question.distractors.join(", ")}
-          </p>
-          <p>
-            <span>{question.topic}</span> ·{" "}
-            <span>{question.difficulty}</span>
-          </p>
-          <button type="button" onClick={() => handleEdit(question)}>
-            Edit
-          </button>
-          <button type="button" onClick={() => handleDelete(question.id)}>
-            Delete
-          </button>
-        </article>
-      ))}
+      <section aria-labelledby="question-list-heading">
+        {questions.map((question) => (
+          <article key={question._id} className="question-card">
+            <h3>{question.stem}</h3>
+            <p>{question.options.map((option) => option.text).join(", ")}</p>
+            <p>{question.difficulty}</p>
+            <button type="button" onClick={() => handleEdit(question)} aria-label={`Edit question: ${question.stem}`}>
+              Edit
+            </button>
+            <button type="button" onClick={() => handleDelete(question._id)} aria-label={`Delete question: ${question.stem}`}>
+              Delete
+            </button>
+          </article>
+        ))}
+      </section>
     </main>
   );
 }

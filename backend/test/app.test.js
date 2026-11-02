@@ -55,6 +55,9 @@ test("TC-05: Each request receives a unique request ID", async () => {
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import app from "../src/app.js";
+import { signToken } from "../src/utils/jwt.js";
+
+process.env.JWT_SECRET ||= "test-only-secret-long-enough-for-unit-tests";
 
 let server;
 let baseUrl;
@@ -98,4 +101,28 @@ test("TC-06: Unknown route returns a structured 404 error", async () => {
   assert.equal(body.error.message, "Route not found");
   assert.ok(requestId, "Response should contain X-Request-Id");
   assert.equal(body.error.requestId, requestId);
+});
+
+test("Sprint 1: Login requires the documented identifier contract", async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "student@example.com", password: "password" }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "INVALID_CREDENTIALS");
+  assert.ok(body.error.requestId);
+});
+
+test("Sprint 1: Student tokens cannot access the question bank", async () => {
+  const token = signToken({ id: "student-123", role: "student" });
+  const response = await fetch(`${baseUrl}/api/admin/questions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 403);
+  assert.equal(body.error.code, "FORBIDDEN");
 });

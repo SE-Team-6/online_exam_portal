@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "Online Exam Portal - Sprint 1 Feature API Tests",
+    "description": "Authentication, question-bank, and authorization checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "instructorToken", "value": "" },
+    { "key": "studentToken", "value": "" },
+    { "key": "questionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Register student",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Postman Student\",\"email\":\"postman-student@example.com\",\"password\":\"Password123!\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/register"
+      }
+    },
+    {
+      "name": "Login with identifier",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"identifier\":\"instructor@example.com\",\"password\":\"Sprint1Pass123!\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.collectionVariables.set('instructorToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create question",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{instructorToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"stem\":\"Which option is correct?\",\"options\":[{\"optionId\":\"a\",\"text\":\"Correct\"},{\"optionId\":\"b\",\"text\":\"Wrong 1\"},{\"optionId\":\"c\",\"text\":\"Wrong 2\"},{\"optionId\":\"d\",\"text\":\"Wrong 3\"}],\"correctOptionId\":\"a\",\"tags\":[\"postman\"],\"difficulty\":\"Easy\"}"
+        },
+        "url": "{{baseUrl}}/api/admin/questions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+              "pm.collectionVariables.set('questionId', pm.response.json().questionId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List questions",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{instructorToken}}" }],
+        "url": "{{baseUrl}}/api/admin/questions"
+      }
+    },
+    {
+      "name": "Update question",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{instructorToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"stem\":\"Which option is correct? Updated\",\"options\":[{\"optionId\":\"a\",\"text\":\"Correct\"},{\"optionId\":\"b\",\"text\":\"Wrong 1\"},{\"optionId\":\"c\",\"text\":\"Wrong 2\"},{\"optionId\":\"d\",\"text\":\"Wrong 3\"}],\"correctOptionId\":\"a\",\"tags\":[\"postman\",\"updated\"],\"difficulty\":\"Medium\"}"
+        },
+        "url": "{{baseUrl}}/api/admin/questions/{{questionId}}"
+      }
+    },
+    {
+      "name": "Student blocked from question bank",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+        "url": "{{baseUrl}}/api/admin/questions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete question",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{instructorToken}}" }],
+        "url": "{{baseUrl}}/api/admin/questions/{{questionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 204', function () { pm.response.to.have.status(204); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

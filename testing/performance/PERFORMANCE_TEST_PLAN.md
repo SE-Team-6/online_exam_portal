@@ -1,160 +1,54 @@
-\# Performance Test Plan
+# Performance Test Plan
 
+## Objective
 
+Evaluate API response time against EXAM-NF-001: p90 must be at most 2,000 ms.
 
-\## 1. Objective
+## Scope and configuration
 
-
-
-To evaluate API response time for the Online Exam Portal and verify the performance requirement EXAM-NF-001.
-
-
-
-\*\*Requirement:\*\* The 90th percentile (p90) response time must be less than or equal to 2 seconds (2000 ms).
-
-
-
-\## 2. Test Scope
-
-
-
-\### Endpoint tested
-
-
-
-| Endpoint | Method | Purpose |
-
-|---|---|---|
-
-| `/api/health/` | GET | Check API response time |
-
-
-
-\### Test configuration
-
-
-
-| Parameter | Value |
-
-|---|---|
-
-| Environment | Local development environment |
-
-| Base URL | `http://localhost:3000` |
-
-| Runtime | Node.js v24.19.0 |
-
-| Testing tool | Node.js performance test script |
-
+| Item | Value |
+| --- | --- |
+| Endpoint | `GET /api/health/` |
+| Environment | Local development |
+| Base URL | `http://localhost:3000` by default; override with `PERFORMANCE_BASE_URL` |
+| Runtime | Node.js 24.19.0 |
 | Warm-up requests | 10 |
-
 | Measured requests | 100 |
-
 | Concurrency | 5 |
+| Percentile method | Nearest rank |
+| Acceptance threshold | p90 <= 2,000 ms and no failed requests |
 
-| Performance metric | 90th percentile response time (p90) |
+## Procedure
 
-| Acceptance threshold | p90 ≤ 2000 ms |
+1. Start the backend with `npm start`.
+2. If the backend is not at `http://localhost:3000`, set `PERFORMANCE_BASE_URL` to its base URL.
+3. From the repository root, run `node testing/performance/health-performance.mjs`.
+4. Save the output in `testing/performance/performance-results.txt`.
 
-
-
-\## 3. Test Procedure
-
-
-
-1\. Start the backend server using `npm start`.
-
-2\. Verify the health endpoint returns HTTP 200.
-
-3\. Execute the Node.js performance test script.
-
-4\. Send 10 warm-up requests before measurement.
-
-5\. Execute 100 measured requests in batches of 5 concurrent requests.
-
-6\. Record response times for successful requests.
-
-7\. Calculate the p90 response time using the nearest-rank percentile method.
-
-8\. Compare the measured p90 against the 2000 ms threshold.
-
-9\. Save the execution output in `performance-results.txt`.
-
-
-
-\## 4. Test Results
-
-
-
-The following results are from the recorded execution:
-
-
+## Latest local result
 
 | Metric | Result |
-
-|---|---:|
-
-| Total requests | 100 |
-
-| Successful requests | 100 |
-
-| Failed requests | 0 |
-
+| --- | ---: |
+| Measured requests | 100 |
+| Successful responses | 100 |
+| Failed responses | 0 |
+| Failed warm-up requests | 0 |
 | Concurrency | 5 |
+| Average successful response time | 1.18 ms |
+| p90 successful response time | 1.85 ms |
+| Result for this endpoint/configuration | PASS |
 
-| Average response time | 5.08 ms |
+This result covers only the health endpoint in the local environment. It does not verify the complete performance requirement.
 
-| p90 response time | 8.38 ms |
+## Limitations and pending work
 
-| Maximum allowed p90 | 2000 ms |
+- The required 200-concurrent-user scenario has not been executed.
+- Protected endpoints and sustained load have not been tested.
+- Deployment-environment performance has not been evaluated.
+- The full EXAM-NF-001 requirement remains unverified until the remaining scenarios are run.
 
-| Result | PASS |
+## Artifacts
 
-
-
-\## 5. Evaluation
-
-
-
-The tested health endpoint achieved a p90 response time of 8.38 ms, which is below the required 2000 ms threshold.
-
-
-
-Therefore, the initial local performance test passed for the tested endpoint and configuration.
-
-
-
-\## 6. Limitations and Pending Tests
-
-
-
-\- Only the health endpoint was included in this execution.
-
-\- Protected question-management endpoints were not tested.
-
-\- The required 200-concurrent-user load scenario has not been executed.
-
-\- Performance under sustained load has not been evaluated.
-
-\- Results from a local development environment may differ from deployment-environment performance.
-
-
-
-The overall EXAM-NF-001 requirement cannot be considered fully verified until the remaining key endpoints and required load scenarios are tested.
-
-
-
-\## 7. Test Artifacts
-
-
-
-\- `testing/performance/health-performance.mjs`
-
-\- `testing/performance/performance-results.txt`
-
-\- `testing/performance/PERFORMANCE\_TEST\_PLAN.md`
-
-
-
-
-
+- `testing/performance/health-performance.mjs`
+- `testing/performance/performance-results.txt`
+- `testing/performance/PERFORMANCE_TEST_PLAN.md`

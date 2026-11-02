@@ -19,7 +19,9 @@ const resultSchema = new mongoose.Schema(
       required: true,
     },
     score: { type: Number, required: true, min: 0 },
+    maxScore: { type: Number, required: true, min: 0 },
     totalQuestions: { type: Number, required: true, min: 0 },
+    submittedAt: { type: Date, required: true },
     evaluatedAt: { type: Date, required: true, default: Date.now },
   },
   { timestamps: true }

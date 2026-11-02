@@ -1,49 +1,43 @@
 import { performance } from "node:perf_hooks";
 
-const URL = "http://localhost:3000/api/health/";
-const TOTAL_REQUESTS = 100;
-const CONCURRENCY = 5;
-const WARMUP_REQUESTS = 10;
+const baseUrl = process.env.PERFORMANCE_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+const url = new URL("/api/health/", baseUrl);
+const totalRequests = 100;
+const concurrency = 5;
+const warmupRequests = 10;
+const timeoutMs = 10_000;
+const thresholdMs = 2_000;
 
 async function sendRequest() {
   const start = performance.now();
-
   try {
-    const response = await fetch(URL);
+    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
     await response.text();
-
-    return {
-      duration: performance.now() - start,
-      status: response.status,
-    };
+    return { duration: performance.now() - start, status: response.status };
   } catch (error) {
-    return {
-      duration: performance.now() - start,
-      status: 0,
-      error: error.message,
-    };
+    return { duration: performance.now() - start, status: 0, error: error.message };
   }
 }
 
-function percentile(values, p) {
-  const sorted = [...values].sort((a, b) => a - b);
-  const index = Math.ceil(p * sorted.length) - 1;
-  return sorted[Math.max(0, index)];
+function percentile(values, proportion) {
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.ceil(proportion * sorted.length) - 1;
+  return sorted[Math.max(index, 0)];
 }
 
 async function runTest() {
-  console.log("Warming up...");
-  for (let i = 0; i < WARMUP_REQUESTS; i++) {
-    await sendRequest();
-  }
+  console.log(`Endpoint: ${url}`);
+  console.log(`Warming up with ${warmupRequests} requests...`);
+  const warmups = await Promise.all(
+    Array.from({ length: warmupRequests }, () => sendRequest())
+  );
+  const failedWarmups = warmups.filter((result) => result.status !== 200).length;
 
-  console.log(`Running ${TOTAL_REQUESTS} requests with concurrency ${CONCURRENCY}...`);
-
+  console.log(`Measuring ${totalRequests} requests at concurrency ${concurrency}...`);
   const results = [];
   const testStart = performance.now();
-
-  for (let i = 0; i < TOTAL_REQUESTS; i += CONCURRENCY) {
-    const batchSize = Math.min(CONCURRENCY, TOTAL_REQUESTS - i);
+  for (let index = 0; index < totalRequests; index += concurrency) {
+    const batchSize = Math.min(concurrency, totalRequests - index);
     const batch = await Promise.all(
       Array.from({ length: batchSize }, () => sendRequest())
     );
@@ -51,24 +45,33 @@ async function runTest() {
   }
 
   const totalTime = performance.now() - testStart;
-  const successful = results.filter((r) => r.status === 200);
+  const successful = results.filter((result) => result.status === 200);
   const failed = results.length - successful.length;
-  const durations = successful.map((r) => r.duration);
+  const durations = successful.map((result) => result.duration);
 
   console.log("\n--- PERFORMANCE TEST RESULTS ---");
-  console.log(`Total requests: ${results.length}`);
+  console.log(`Measured requests: ${results.length}`);
   console.log(`Successful (HTTP 200): ${successful.length}`);
   console.log(`Failed: ${failed}`);
-  console.log(`Total test time: ${(totalTime / 1000).toFixed(2)} seconds`);
+  console.log(`Failed warm-up requests: ${failedWarmups}`);
+  console.log(`Total measurement time: ${(totalTime / 1000).toFixed(2)} seconds`);
 
+  let p90 = null;
   if (durations.length > 0) {
-    const p90 = percentile(durations, 0.90);
-    console.log(`Average response time: ${(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(2)} ms`);
-    console.log(`p90 response time: ${p90.toFixed(2)} ms`);
-    console.log(`Target (p90 <= 2000 ms): ${p90 <= 2000 ? "PASS" : "FAIL"}`);
+    p90 = percentile(durations, 0.9);
+    const average = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
+    console.log(`Average successful response time: ${average.toFixed(2)} ms`);
+    console.log(`p90 successful response time: ${p90.toFixed(2)} ms`);
   } else {
-    console.log("No successful responses; p90 cannot be calculated.");
+    console.log("No successful measured responses; p90 cannot be calculated.");
   }
+
+  const passed = failed === 0 && failedWarmups === 0 && p90 !== null && p90 <= thresholdMs;
+  console.log(`Target (p90 <= ${thresholdMs} ms, no failed requests): ${passed ? "PASS" : "FAIL"}`);
+  if (!passed) process.exitCode = 1;
 }
 
-runTest();
+runTest().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

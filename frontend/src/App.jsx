@@ -17,6 +17,7 @@ import QuestionBank from "./pages/QuestionBank";
 import InstructorResults from "./pages/InstructorResults";
 import Results from "./pages/Results";
 import StudentExam from "./pages/StudentExam";
+import AuditLogs from "./pages/AuditLogs";
 
 function Login() {
   const navigate = useNavigate();
@@ -197,6 +198,7 @@ function Register() {
 function Student() {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startingExamId, setStartingExamId] = useState(null);
   const [error, setError] = useState("");
@@ -226,6 +228,24 @@ function Student() {
 
     loadAvailableExams();
 
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadRecentResults() {
+      try {
+        const data = await apiRequest("/student/results");
+        if (active) setResults(Array.isArray(data.results) ? data.results : []);
+      } catch {
+        if (active) setResults([]);
+      }
+    }
+
+    loadRecentResults();
     return () => {
       active = false;
     };
@@ -268,6 +288,10 @@ function Student() {
     return `${minutes} minutes`;
   }
 
+  const averageScore = results.length
+    ? `${(results.reduce((sum, result) => sum + result.percentage, 0) / results.length).toFixed(1)}%`
+    : "—";
+
   return (
     <main className="student-dashboard">
       <header className="student-dashboard-header">
@@ -283,6 +307,21 @@ function Student() {
           </Link>
         </nav>
       </header>
+
+      <section className="student-overview" aria-label="Your exam overview">
+        <article>
+          <span>Available now</span>
+          <strong>{loading ? "…" : exams.length}</strong>
+        </article>
+        <article>
+          <span>Completed</span>
+          <strong>{results.length}</strong>
+        </article>
+        <article>
+          <span>Average score</span>
+          <strong>{averageScore}</strong>
+        </article>
+      </section>
 
       <section className="student-dashboard-content">
         <div className="student-exams-heading">
@@ -362,6 +401,25 @@ function Student() {
           </div>
         )}
       </section>
+
+      <section className="student-recent-results" aria-labelledby="recent-results-heading">
+        <div>
+          <h2 id="recent-results-heading">Recent results</h2>
+          <Link to="/results">View all results</Link>
+        </div>
+        {results.length === 0 ? (
+          <p>Submit your first exam to see your score and percentile here.</p>
+        ) : (
+          <ul>
+            {results.slice(0, 3).map((result) => (
+              <li key={result.resultId}>
+                <span>{result.examTitle}</span>
+                <strong>{result.percentage.toFixed(1)}%</strong>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }
@@ -372,6 +430,8 @@ function StudentExamRoute() {
 }
 
 function Admin() {
+  const isAdmin = sessionStorage.getItem("role") === "admin";
+
   return (
     <main>
       <h1>Admin Dashboard</h1>
@@ -386,6 +446,7 @@ function Admin() {
           View Instructor Results &amp; Analytics
         </Link>
       </p>
+      {isAdmin && <p><Link to="/admin/audit-logs">View Audit Activity</Link></p>}
     </main>
   );
 }
@@ -469,6 +530,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["admin", "instructor"]}>
                 <InstructorResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AuditLogs />
               </ProtectedRoute>
             }
           />

@@ -13,6 +13,8 @@ import attemptRoutes from "./routes/attempt.routes.js";
 import examAttemptRoutes from "./routes/examAttempt.routes.js";
 import adminExamRoutes from "./routes/adminExam.routes.js";
 import examRoutes from "./routes/exam.routes.js";
+import studentResultsRoutes from "./routes/studentResults.routes.js";
+import adminResultsRoutes from "./routes/adminResults.routes.js";
 const app = express();
 
 app.disable("x-powered-by");
@@ -29,8 +31,10 @@ app.use("/api/attempts", attemptRoutes);
 app.use("/api/exams/:examId/attempts", examAttemptRoutes);
 app.use("/api/admin/questions", adminQuestionRoutes);
 app.use("/api/admin/audit-logs", auditRoutes);
+app.use("/api/admin/results", adminResultsRoutes);
 app.use("/api/admin/exams", adminExamRoutes);
 app.use("/api/student/exams", examRoutes);
+app.use("/api/student/results", studentResultsRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

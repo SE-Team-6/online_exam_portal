@@ -4,6 +4,7 @@ import {
   createQuestion,
   deleteQuestion,
   getQuestion,
+  importQuestions,
   listQuestions,
   updateQuestion,
 } from "../services/question.service.js";
@@ -23,6 +24,17 @@ router.get(
   "/",
   asyncHandler(async (_req, res) => {
     res.status(200).json({ questions: await listQuestions() });
+  })
+);
+
+router.post(
+  "/import",
+  asyncHandler(async (req, res) => {
+    const questions = await importQuestions(req.body?.questions);
+    res.status(201).json({
+      importedCount: questions.length,
+      questionIds: questions.map((question) => question._id.toString()),
+    });
   })
 );
 

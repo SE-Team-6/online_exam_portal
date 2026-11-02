@@ -118,3 +118,153 @@ export async function startAttempt({ examId, studentId }) {
     })),
   };
 }
+
+export async function saveAttemptAnswer({
+  attemptId,
+  questionId,
+  selectedOptionId,
+  studentId,
+}) {
+  if (
+    !mongoose.isValidObjectId(attemptId) ||
+    !mongoose.isValidObjectId(questionId)
+  ) {
+    throw apiError(400, "INVALID_ID", "Attempt ID or question ID is invalid.");
+  }
+
+  if (
+    typeof selectedOptionId !== "string" ||
+    !selectedOptionId.trim()
+  ) {
+    throw apiError(
+      400,
+      "INVALID_OPTION",
+      "A selected option ID is required."
+    );
+  }
+
+  const optionId = selectedOptionId.trim();
+
+  const attempt = await Attempt.findById(attemptId).select(
+    "studentId status expiresAt questionSnapshots"
+  );
+
+  if (!attempt) {
+    throw apiError(404, "ATTEMPT_NOT_FOUND", "Attempt was not found.");
+  }
+
+  if (String(attempt.studentId) !== String(studentId)) {
+    throw apiError(403, "FORBIDDEN", "You cannot update another student's attempt.");
+  }
+
+  const questionIsInAttempt = attempt.questionSnapshots.some(
+    (snapshot) => String(snapshot.questionId) === String(questionId)
+  );
+
+  if (!questionIsInAttempt) {
+    throw apiError(
+      400,
+      "QUESTION_NOT_IN_ATTEMPT",
+      "This question is not part of the attempt."
+    );
+  }
+
+  if (attempt.status !== "in_progress") {
+    throw apiError(409, "ATTEMPT_NOT_ACTIVE", "This attempt is not active.");
+  }
+
+  const question = await Question.findById(questionId)
+    .select("options.optionId")
+    .lean();
+
+  if (!question) {
+    throw apiError(404, "QUESTION_NOT_FOUND", "Question was not found.");
+  }
+
+  const optionIsValid = question.options.some(
+    (option) => option.optionId === optionId
+  );
+
+  if (!optionIsValid) {
+    throw apiError(
+      400,
+      "INVALID_OPTION",
+      "The selected option does not belong to this question."
+    );
+  }
+
+  // Use the server clock and include the deadline in each atomic update.
+  const now = new Date();
+  const activeAttemptFilter = {
+    _id: attempt._id,
+    studentId,
+    status: "in_progress",
+    expiresAt: { $gt: now },
+    "questionSnapshots.questionId": question._id,
+  };
+
+  // If this question already has an answer, replace its selection.
+  let updatedAttempt = await Attempt.findOneAndUpdate(
+    {
+      ...activeAttemptFilter,
+      "answers.questionId": question._id,
+    },
+    {
+      $set: { "answers.$.selectedOptionId": optionId },
+    },
+    { new: true, runValidators: true }
+  );
+
+  // Otherwise add one answer. The filter prevents concurrent retries from
+  // adding duplicate entries for the same question.
+  if (!updatedAttempt) {
+    updatedAttempt = await Attempt.findOneAndUpdate(
+      {
+        ...activeAttemptFilter,
+        answers: {
+          $not: {
+            $elemMatch: { questionId: question._id },
+          },
+        },
+      },
+      {
+        $push: {
+          answers: {
+            questionId: question._id,
+            selectedOptionId: optionId,
+          },
+        },
+      },
+      { new: true, runValidators: true }
+    );
+  }
+
+  // A concurrent save may have inserted the answer first; update that entry.
+  if (!updatedAttempt) {
+    updatedAttempt = await Attempt.findOneAndUpdate(
+      {
+        ...activeAttemptFilter,
+        "answers.questionId": question._id,
+      },
+      {
+        $set: { "answers.$.selectedOptionId": optionId },
+      },
+      { new: true, runValidators: true }
+    );
+  }
+
+  if (!updatedAttempt) {
+    throw apiError(
+      409,
+      "ATTEMPT_NOT_ACTIVE",
+      "The attempt was submitted or its timer expired."
+    );
+  }
+
+  return {
+    attemptId: updatedAttempt._id.toString(),
+    questionId: question._id.toString(),
+    selectedOptionId: optionId,
+    savedAt: updatedAttempt.updatedAt,
+  };
+}

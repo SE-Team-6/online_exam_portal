@@ -70,8 +70,15 @@ jobs:
       - name: Test
         if: steps.detect.outputs.present == 'true'
         working-directory: frontend
-        run: npm test --if-present
+        run: npm run test:coverage --if-present
       - name: Build
         if: steps.detect.outputs.present == 'true'
         working-directory: frontend
         run: npm run build
+      - name: Upload frontend coverage
+        if: always() && steps.detect.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          if-no-files-found: ignore

@@ -37,3 +37,12 @@ The initial `curl.exe` attempt returned a JSON parsing error because the request
 - Retest the login endpoint after the defect is fixed.
 - Update requirement coverage after verifying the requirements and test mapping.
 This report records only the checks performed so far. It does not represent full application or requirement coverage.
+## 6. Login Route Retest — 2026-11-15
+- **Endpoint:** `POST /api/auth/login`
+- **Test input:** Non-existent test email and invalid password
+- **Actual HTTP status:** `401 Unauthorized`
+- **Actual error code:** `INVALID_CREDENTIALS`
+- **Actual message:** `Invalid email or password`
+- **Request ID:** `d0f06c07-85dc-47f2-9db7-f074c378b2cf`
+- **Retest status:** PASS — the login route responds and handles invalid credentials as documented.
+The earlier 404 result remains in the historical execution record. This retest does not verify successful login with valid credentials, registration, or the complete authentication workflow. GitHub issue #56 should not be considered closed solely on this evidence; confirm its status with the team.

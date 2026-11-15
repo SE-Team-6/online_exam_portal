@@ -1,4 +1,12 @@
-Endpoint: http://127.0.0.1:3011/api/health/
+﻿Commit: 882cfd1 (includes main at 08128b7)
+Server: local, node --watch src/server.js, port 3000
+Date: 2026-11-15
+Scope: GET /api/health/ only
+
+Commit: 882cfd1 (includes main at 08128b7)
+Server: local, node --watch src/server.js, port 3000
+Date: 2026-11-15
+Scope: GET /api/health/ onlyEndpoint: http://localhost:3000/api/health/
 Warming up with 10 requests...
 Measuring 100 requests at concurrency 5...
 
@@ -7,7 +15,9 @@ Measured requests: 100
 Successful (HTTP 200): 100
 Failed: 0
 Failed warm-up requests: 0
-Total measurement time: 0.04 seconds
-Average successful response time: 1.34 ms
-p90 successful response time: 2.05 ms
+Total measurement time: 0.24 seconds
+Average successful response time: 8.06 ms
+p90 successful response time: 12.19 ms
 Target (p90 <= 2000 ms, no failed requests): PASS
+
+

@@ -77,7 +77,7 @@ export async function startAttempt({ examId, studentId }) {
   const startedAt = new Date();
 
   const exam = await Exam.findById(examId)
-    .select("questionIds durationSeconds startsAt endsAt")
+    .select("questionIds questionSnapshots durationSeconds startsAt endsAt")
     .lean();
 
   if (!exam) {
@@ -100,17 +100,48 @@ export async function startAttempt({ examId, studentId }) {
     throw apiError(409, "EXAM_HAS_NO_QUESTIONS", "This exam has no questions.");
   }
 
-  const questions = await Question.find({ _id: { $in: questionIds } })
-    .select("_id stem options correctOptionId")
-    .lean();
+  let examQuestions;
+  const examSnapshots = Array.isArray(exam.questionSnapshots)
+    ? exam.questionSnapshots
+    : [];
 
-  const questionsById = new Map(
-    questions.map((question) => [String(question._id), question])
-  );
+  if (examSnapshots.length > 0) {
+    if (examSnapshots.length !== questionIds.length) {
+      throw apiError(
+        409,
+        "EXAM_QUESTIONS_MISSING",
+        "The exam question snapshot is incomplete."
+      );
+    }
 
-  const examQuestions = questionIds
-    .map((id) => questionsById.get(String(id)))
-    .filter(Boolean);
+    const snapshotsById = new Map(
+      examSnapshots.map((snapshot) => [
+        String(snapshot.questionId),
+        {
+          ...snapshot,
+          _id: snapshot.questionId,
+          version: snapshot.questionVersion,
+        },
+      ])
+    );
+
+    examQuestions = questionIds
+      .map((id) => snapshotsById.get(String(id)))
+      .filter(Boolean);
+  } else {
+    // Compatibility for exams created before question snapshots were added.
+    const questions = await Question.find({ _id: { $in: questionIds } })
+      .select("_id version stem options correctOptionId")
+      .lean();
+
+    const questionsById = new Map(
+      questions.map((question) => [String(question._id), question])
+    );
+
+    examQuestions = questionIds
+      .map((id) => questionsById.get(String(id)))
+      .filter(Boolean);
+  }
 
   if (examQuestions.length !== questionIds.length) {
     throw apiError(
@@ -135,9 +166,10 @@ export async function startAttempt({ examId, studentId }) {
     startedAt.getTime() + durationSeconds * 1000
   );
   const examDeadline = exam.endsAt ? new Date(exam.endsAt) : null;
-  const expiresAt = examDeadline && examDeadline < durationDeadline
-    ? examDeadline
-    : durationDeadline;
+  const expiresAt =
+    examDeadline && examDeadline < durationDeadline
+      ? examDeadline
+      : durationDeadline;
 
   const attempt = await Attempt.create({
     examId: exam._id,
@@ -146,11 +178,12 @@ export async function startAttempt({ examId, studentId }) {
     expiresAt,
     status: "in_progress",
 
-    // Saved in this order so later answer saving and grading use this attempt's
-    // exact questions and frozen answer key.
+    // Save the version, answer key, and allowed options for this attempt.
     questionSnapshots: randomizedQuestions.map((question) => ({
       questionId: question._id,
       correctOptionId: question.correctOptionId,
+      questionVersion: question.questionVersion ?? question.version ?? 1,
+      optionIds: question.options.map(({ optionId }) => optionId),
     })),
   });
 
@@ -161,6 +194,7 @@ export async function startAttempt({ examId, studentId }) {
     startedAt: attempt.startedAt,
     expiresAt: attempt.expiresAt,
     durationSeconds,
+    // Do not include correctOptionId in the student response.
     questions: randomizedQuestions.map((question) => ({
       questionId: question._id.toString(),
       stem: question.stem,
@@ -210,11 +244,11 @@ export async function saveAttemptAnswer({
     throw apiError(403, "FORBIDDEN", "You cannot update another student's attempt.");
   }
 
-  const questionIsInAttempt = attempt.questionSnapshots.some(
+  const questionSnapshot = attempt.questionSnapshots.find(
     (snapshot) => String(snapshot.questionId) === String(questionId)
   );
 
-  if (!questionIsInAttempt) {
+  if (!questionSnapshot) {
     throw apiError(
       400,
       "QUESTION_NOT_IN_ATTEMPT",
@@ -231,25 +265,32 @@ export async function saveAttemptAnswer({
     throw apiError(409, "ATTEMPT_EXPIRED", "The exam deadline has passed.");
   }
 
-  const question = await Question.findById(questionId)
-    .select("options.optionId")
-    .lean();
+  // Use options saved with the attempt. The fallback supports older attempts.
+  let allowedOptionIds = questionSnapshot.optionIds ?? [];
 
-  if (!question) {
-    throw apiError(404, "QUESTION_NOT_FOUND", "Question was not found.");
+  if (allowedOptionIds.length === 0) {
+    const legacyQuestion = await Question.findById(questionId)
+      .select("options.optionId")
+      .lean();
+
+    if (!legacyQuestion) {
+      throw apiError(404, "QUESTION_NOT_FOUND", "Question was not found.");
+    }
+
+    allowedOptionIds = legacyQuestion.options.map(
+      (option) => option.optionId
+    );
   }
 
-  const optionIsValid = question.options.some(
-    (option) => option.optionId === optionId
-  );
-
-  if (!optionIsValid) {
+  if (!allowedOptionIds.includes(optionId)) {
     throw apiError(
       400,
       "INVALID_OPTION",
       "The selected option does not belong to this question."
     );
   }
+
+  const questionIdForSave = questionSnapshot.questionId;
 
   // Use the server clock and include the deadline in each atomic update.
   const now = new Date();
@@ -258,14 +299,14 @@ export async function saveAttemptAnswer({
     studentId,
     status: "in_progress",
     expiresAt: { $gt: now },
-    "questionSnapshots.questionId": question._id,
+    "questionSnapshots.questionId": questionIdForSave,
   };
 
   // If this question already has an answer, replace its selection.
   let updatedAttempt = await Attempt.findOneAndUpdate(
     {
       ...activeAttemptFilter,
-      "answers.questionId": question._id,
+      "answers.questionId": questionIdForSave,
     },
     {
       $set: { "answers.$[answer].selectedOptionId": optionId },
@@ -273,7 +314,7 @@ export async function saveAttemptAnswer({
     {
       returnDocument: "after",
       runValidators: true,
-      arrayFilters: [{ "answer.questionId": question._id }],
+      arrayFilters: [{ "answer.questionId": questionIdForSave }],
     }
   );
 
@@ -285,14 +326,14 @@ export async function saveAttemptAnswer({
         ...activeAttemptFilter,
         answers: {
           $not: {
-            $elemMatch: { questionId: question._id },
+            $elemMatch: { questionId: questionIdForSave },
           },
         },
       },
       {
         $push: {
           answers: {
-            questionId: question._id,
+            questionId: questionIdForSave,
             selectedOptionId: optionId,
           },
         },
@@ -306,7 +347,7 @@ export async function saveAttemptAnswer({
     updatedAttempt = await Attempt.findOneAndUpdate(
       {
         ...activeAttemptFilter,
-        "answers.questionId": question._id,
+        "answers.questionId": questionIdForSave,
       },
       {
         $set: { "answers.$[answer].selectedOptionId": optionId },
@@ -314,7 +355,7 @@ export async function saveAttemptAnswer({
       {
         returnDocument: "after",
         runValidators: true,
-        arrayFilters: [{ "answer.questionId": question._id }],
+        arrayFilters: [{ "answer.questionId": questionIdForSave }],
       }
     );
   }
@@ -339,7 +380,7 @@ export async function saveAttemptAnswer({
 
   return {
     attemptId: updatedAttempt._id.toString(),
-    questionId: question._id.toString(),
+    questionId: questionIdForSave.toString(),
     selectedOptionId: optionId,
     savedAt: updatedAttempt.updatedAt,
   };
@@ -369,12 +410,14 @@ export async function saveAttemptAnswers({ attemptId, answers, studentId }) {
 
   const savedAnswers = [];
   for (const answer of answers) {
-    savedAnswers.push(await saveAttemptAnswer({
-      attemptId,
-      questionId: answer.questionId,
-      selectedOptionId: answer.selectedOptionId,
-      studentId,
-    }));
+    savedAnswers.push(
+      await saveAttemptAnswer({
+        attemptId,
+        questionId: answer.questionId,
+        selectedOptionId: answer.selectedOptionId,
+        studentId,
+      })
+    );
   }
 
   return {
@@ -384,7 +427,11 @@ export async function saveAttemptAnswers({ attemptId, answers, studentId }) {
   };
 }
 
-export async function submitAttempt({ attemptId, studentId, requestId = "unknown" }) {
+export async function submitAttempt({
+  attemptId,
+  studentId,
+  requestId = "unknown",
+}) {
   if (!mongoose.isValidObjectId(attemptId)) {
     throw apiError(400, "INVALID_ATTEMPT_ID", "Attempt ID is invalid.");
   }
@@ -466,7 +513,11 @@ export async function submitAttempt({ attemptId, studentId, requestId = "unknown
     latestAttempt.status === "in_progress" &&
     new Date(latestAttempt.expiresAt) <= new Date()
   ) {
-    const finalizedAttempt = await finalizeExpiredAttempt(latestAttempt, new Date(), requestId);
+    const finalizedAttempt = await finalizeExpiredAttempt(
+      latestAttempt,
+      new Date(),
+      requestId
+    );
     if (finalizedAttempt?.status === "submitted") {
       const result = await gradeSubmittedAttempt(finalizedAttempt, { requestId });
       return submissionResponse(finalizedAttempt, result);

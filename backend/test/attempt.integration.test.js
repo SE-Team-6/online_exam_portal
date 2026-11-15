@@ -477,3 +477,101 @@ test("the background deadline sweep submits and grades disconnected attempts", a
   assert.equal(result.score, 0);
   assert.equal(result.maxScore, 2);
 });
+
+test("exam keeps its question version after the question bank is edited", async () => {
+  const originalQuestion = {
+    stem: "Original exam question",
+    options: [
+      { optionId: "A", text: "Original A" },
+      { optionId: "B", text: "Original B" },
+      { optionId: "C", text: "Original C" },
+      { optionId: "D", text: "Original D" },
+    ],
+    correctOptionId: "B",
+    tags: ["version-test"],
+    difficulty: "easy",
+  };
+
+  const [question] = await Question.create([originalQuestion]);
+  createdQuestionIds.push(question._id);
+
+  const createExamResponse = await request("/api/admin/exams", {
+    token: instructorToken,
+    method: "POST",
+    body: {
+      title: "Question version integration exam",
+      questionIds: [question._id.toString()],
+      durationSeconds: 300,
+      startsAt: new Date(Date.now() - 60_000),
+      endsAt: new Date(Date.now() + 10 * 60_000),
+    },
+  });
+
+  const createExamBody = await createExamResponse.json();
+  assert.equal(createExamResponse.status, 201);
+
+  const updatedQuestion = {
+    stem: "Edited question after exam creation",
+    options: [
+      { optionId: "W", text: "New W" },
+      { optionId: "X", text: "New X" },
+      { optionId: "Y", text: "New Y" },
+      { optionId: "Z", text: "New Z" },
+    ],
+    correctOptionId: "Y",
+    tags: ["version-test"],
+    difficulty: "medium",
+  };
+
+  const updateResponse = await request(
+    `/api/admin/questions/${question._id}`,
+    {
+      token: instructorToken,
+      method: "PUT",
+      body: updatedQuestion,
+    }
+  );
+
+  assert.equal(updateResponse.status, 200);
+
+  const { response: startResponse, body: attempt } =
+    await startCanonicalAttempt(createExamBody.exam.id);
+
+  assert.equal(startResponse.status, 201);
+  assert.equal(attempt.questions.length, 1);
+  assert.equal(attempt.questions[0].stem, originalQuestion.stem);
+  assert.deepEqual(
+    attempt.questions[0].options.map((option) => option.optionId),
+    ["A", "B", "C", "D"]
+  );
+  assert.equal(JSON.stringify(attempt).includes("correctOptionId"), false);
+
+  const savedAttempt = await Attempt.findById(attempt.attemptId).lean();
+  const savedSnapshot = savedAttempt.questionSnapshots.find(
+    (snapshot) => String(snapshot.questionId) === String(question._id)
+  );
+
+  assert.equal(savedSnapshot.questionVersion, 1);
+  assert.equal(savedSnapshot.correctOptionId, "B");
+  assert.deepEqual(savedSnapshot.optionIds, ["A", "B", "C", "D"]);
+
+  const saveResponse = await request(
+    `/api/attempts/${attempt.attemptId}/answers/${question._id}`,
+    {
+      token: studentToken,
+      method: "PUT",
+      body: { selectedOptionId: "B" },
+    }
+  );
+  assert.equal(saveResponse.status, 200);
+
+  const submitResponse = await request(
+    `/api/attempts/${attempt.attemptId}/submit`,
+    { token: studentToken, method: "POST" }
+  );
+  const submitBody = await submitResponse.json();
+
+  assert.equal(submitResponse.status, 200);
+  assert.equal(submitBody.attempt.score, 1);
+  assert.equal(submitBody.attempt.maxScore, 1);
+});

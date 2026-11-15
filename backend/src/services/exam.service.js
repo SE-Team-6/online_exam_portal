@@ -26,9 +26,43 @@ function validateExam(body) {
 
 export async function createExam(body, actorId) {
   const input = validateExam(body);
-  const found = await Question.countDocuments({ _id: { $in: input.questionIds } });
-  if (found !== input.questionIds.length) throw apiError(400, "UNKNOWN_QUESTION", "One or more selected questions do not exist.");
-  return Exam.create({ ...input, createdBy: actorId });
+   const questions = await Question.find({
+    _id: { $in: input.questionIds },
+  })
+    .select("_id version stem options correctOptionId tags difficulty")
+    .lean();
+
+  if (questions.length !== input.questionIds.length) {
+    throw apiError(
+      400,
+      "UNKNOWN_QUESTION",
+      "One or more selected questions do not exist."
+    );
+  }
+
+  const questionsById = new Map(
+    questions.map((question) => [String(question._id), question])
+  );
+
+  const questionSnapshots = input.questionIds.map((questionId) => {
+    const question = questionsById.get(String(questionId));
+
+    return {
+      questionId: question._id,
+      questionVersion: question.version ?? 1,
+      stem: question.stem,
+      options: question.options,
+      correctOptionId: question.correctOptionId,
+      tags: question.tags ?? [],
+      difficulty: question.difficulty,
+    };
+  });
+
+  return Exam.create({
+    ...input,
+    questionSnapshots,
+    createdBy: actorId,
+  });
 }
 
 export function listExams() {

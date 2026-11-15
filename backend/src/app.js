@@ -15,6 +15,7 @@ import adminExamRoutes from "./routes/adminExam.routes.js";
 import examRoutes from "./routes/exam.routes.js";
 import studentResultsRoutes from "./routes/studentResults.routes.js";
 import adminResultsRoutes from "./routes/adminResults.routes.js";
+import { apiRateLimiter } from "./middleware/rateLimits.js";
 const app = express();
 
 app.disable("x-powered-by");
@@ -24,6 +25,7 @@ if (Number.isInteger(proxyHops) && proxyHops > 0) app.set("trust proxy", proxyHo
 app.use(requireHttps);
 app.use(corsMiddleware);
 app.use(express.json({ limit: "1mb" }));
+app.use("/api", apiRateLimiter);
 app.use(auditEvents);
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRoutes);

@@ -7,7 +7,13 @@ export function errorHandler(error, _req, res, next) {
 
   res.status(status).json({
     error: {
-      code: error.code ?? (status === 404 ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR"),
+      code: error.code ?? (
+        status === 404
+          ? "NOT_FOUND"
+          : status === 413
+            ? "PAYLOAD_TOO_LARGE"
+            : "INTERNAL_SERVER_ERROR"
+      ),
       message: status >= 500 ? "Internal server error" : error.message,
       requestId: res.locals.requestId,
     },

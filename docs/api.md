@@ -35,6 +35,13 @@ Returns `200`:
 
 Invalid credentials return `401`; a locked account returns `423`.
 
+Requests to `/api` are limited to 300 per client IP per minute. Login requests are
+also limited to 10 per minute for each client IP and normalized account identifier.
+Rate-limited responses return `429` with the standard error body and rate-limit
+headers. JSON request bodies are limited to 1 MB; larger bodies return `413`.
+The default rate-limit store is in-memory and applies per backend process. A
+multi-instance deployment should use a shared store to enforce limits across instances.
+
 ## Question bank
 
 All question-bank endpoints require an instructor or admin token.

@@ -24,7 +24,8 @@
 | EXAM-F-010 | Load exam questions in randomized order and start a server-side countdown timer | 4.2; SRS §8 | Exam / timer | TC-Exam-01 | N / not yet verified | SRS §8 maps this requirement to TC-Exam-01. |
 | EXAM-F-011 | Auto-submit the exam when the timer expires and save answered questions | 4.2 | Exam / submission | TC-Exam-02 | TBD | Test ID is specified in SRS §4.2. No execution evidence supplied. |
 | EXAM-F-020–EXAM-F-025 | Instructor question-bank management: create, edit, tag, delete, CSV bulk import and version question banks | 4.3 | Question bank / instructor | TBD | Not tested / mapping needed | SRS gives the requirement ID range and behavior, but does not provide individual test-case IDs in the supplied section. |
-| EXAM-F-030–EXAM-F-034 | Automatically grade submissions, compute scores/percentile and display results/analytics | 4.4 | Evaluation / results | TBD | Not tested / mapping needed | SRS gives the requirement ID range and behavior, but does not provide individual test-case IDs in the supplied section. |
+| EXAM-F-030, EXAM-F-032–EXAM-F-034 | Automatically grade submissions, compute scores and display results/analytics | 4.4 | Evaluation / results | Existing attempt and results integration tests | Partially verified | Result creation, score, percentage, and result access are covered in `backend/test/attempt.integration.test.js`; analytics and all result paths still need mapped acceptance tests. |
+| EXAM-F-031 | Compute a percentile against submitted attempts for the same exam | 4.4 | Evaluation / reporting | TC-Eval-04 | P / pass | `backend/test/attempt.integration.test.js`: 7/7 tests passed on 2026-11-15, including cohort isolation, tied scores, and student/admin GET result responses. |
 | EXAM-F-040–EXAM-F-044 | Admin dashboard: schedule exams, monitor attempt counts, view audit logs and export result reports | 4.5 | Admin dashboard | TBD | Not tested / mapping needed | SRS gives the requirement ID range and behavior, but does not provide individual test-case IDs in the supplied section. |
 | EXAM-NF-001 | Exam page load and answer-submission response time ≤ 2 seconds for 90% of requests under normal load | 5; SRS §8 | Web UI / API performance | TC-Perf-01 | N / not yet verified | SRS §8 maps this requirement to TC-Perf-01. No performance execution result supplied. |
 | EXAM-NF-002 | Availability ≥ 99.5% during scheduled exam windows | 5 | Operations / availability | Ops reports | Not tested / evidence needed | SRS specifies operational reports as evidence; no availability report supplied. |
@@ -36,6 +37,14 @@
 | EXAM-SR-003 | Restrict question-bank and answer-key access to authorized instructor/admin roles | 5.1.2 | Authorization / question bank | TBD | Not tested / mapping needed | SRS does not give a test-case reference for this row. |
 | EXAM-SR-004 | Use signed, expiring JWTs and reject tampered tokens | 5.1.2 | Authentication / session | TBD | Not tested / mapping needed | SRS does not give a test-case reference for this row. |
 | EXAM-SR-005 | Log admin actions for audit purposes | 5.1.2 | Admin / audit | TC-OPS-01 (candidate) | TBD | Candidate link based on audit behavior; confirm the test verifies admin actions specifically. |
+
+## Additional SAD Security-Control Verification
+
+This implementation control is specified in SAD Section 3.9 and is recorded separately from the SRS requirement rows above.
+
+| Design reference | Control | Test case | Status | Evidence / comments |
+|---|---|---|---|---|
+| SAD §3.9 | Limit API/login request rates and cap JSON request bodies at 1 MB | TC-Sec-03 | P / pass | `backend/test/rateLimits.test.js` verifies the 300-request API cap, login cap and identifier isolation; `backend/test/app.test.js` verifies oversized JSON returns 413. Targeted run: 12/12 tests passed on 2026-11-15. |
 
 ## Execution evidence currently available
 

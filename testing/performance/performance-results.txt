@@ -3,10 +3,7 @@ Server: local, node --watch src/server.js, port 3000
 Date: 2026-11-15
 Scope: GET /api/health/ only
 
-Commit: 882cfd1 (includes main at 08128b7)
-Server: local, node --watch src/server.js, port 3000
-Date: 2026-11-15
-Scope: GET /api/health/ onlyEndpoint: http://localhost:3000/api/health/
+Endpoint: http://localhost:3000/api/health/
 Warming up with 10 requests...
 Measuring 100 requests at concurrency 5...
 

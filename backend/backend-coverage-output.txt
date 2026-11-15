@@ -1,0 +1,94 @@
+
+> backend@1.0.0 test
+> node --test --experimental-test-coverage
+
+Γ£ö TC-08: Health endpoint returns JSON content type (172.6833ms)
+Γ£ö TC-07: Malformed JSON returns HTTP 400 (66.212ms)
+Γ£ö JSON request bodies larger than 1 MB return HTTP 413 (38.7216ms)
+Γ£ö TC-03: Unsupported HTTP method returns 404 (23.6038ms)
+Γ£ö TC-05: Each request receives a unique request ID (11.0112ms)
+Γ£ö TC-01: Health endpoint returns HTTP 200 (4.9025ms)
+Γ£ö TC-06: Unknown route returns a structured 404 error (6.5184ms)
+Γ£ö Sprint 1: Login requires the documented identifier contract (10.2222ms)
+Γ£ö Sprint 1: Student tokens cannot access the question bank (17.7142ms)
+Γ£ö attempt start requires a student and never returns the answer key (434.0737ms)
+Γ£ö bulk and compatibility answer saves enforce ownership and are idempotent (250.0462ms)
+Γ£ö submission freezes grading, returns the result, and safely handles concurrent retries (328.3685ms)
+Γ£ö result percentiles use submitted attempts from the same exam and include ties (103.0069ms)
+Γ£ö question CSV import validates every row before creating questions (60.4532ms)
+Γ£ö a save after the deadline is rejected and finalizes and grades the attempt (84.4876ms)
+Γ£ö the background deadline sweep submits and grades disconnected attempts (82.5781ms)
+Γ£ö locks an account after five failed logins (1123.0873ms)
+Γ£ö successful login resets failed login state (155.6595ms)
+Γ£ö signs a token with user id, role, and expiry (21.9262ms)
+Γ£ö rejects a token with a tampered signature (4.118ms)
+Γ£ö rejects an expired token (2.839ms)
+Γ£ö requireAuth attaches the verified user to the request (6.2361ms)
+Γ£ö requireAuth rejects a missing bearer token with 401 (0.9194ms)
+Γ£ö requireRole blocks users with the wrong role (1.0584ms)
+Γ£ö hashPassword creates a salted password hash (241.2648ms)
+Γ£ö verifyPassword accepts the original password (240.0116ms)
+Γ£ö verifyPassword rejects the wrong password (217.3088ms)
+Γ£ö verifyPassword rejects malformed hashes (0.666ms)
+Γ£ö hashPassword rejects short passwords (1.7848ms)
+Γ£ö API rate limiter returns a structured 429 after its configured request cap (227.6071ms)
+Γ£ö API rate limiter allows 300 requests per IP in a minute by default (3702.3507ms)
+Γ£ö login rate limiter normalizes identifiers and keeps distinct accounts separate (235.2163ms)
+Γä╣ tests 32
+Γä╣ suites 0
+Γä╣ pass 32
+Γä╣ fail 0
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 5262.0567
+Γä╣ start of coverage report
+Γä╣ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Γä╣ file                       | line % | branch % | funcs % | uncovered lines
+Γä╣ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Γä╣ src                        |        |          |         |
+Γä╣  app.js                    | 100.00 |    33.33 |  100.00 |
+Γä╣  middleware                |        |          |         |
+Γä╣   asyncHandler.js          | 100.00 |   100.00 |  100.00 |
+Γä╣   auditEvents.js           |  92.73 |    89.74 |   80.00 | 17-18 50-51
+Γä╣   cors.js                  |  55.56 |    50.00 |  100.00 | 6-9 12-15
+Γä╣   errorHandler.js          |  90.48 |    55.56 |  100.00 | 3-4
+Γä╣   notFound.js              | 100.00 |   100.00 |  100.00 |
+Γä╣   rateLimits.js            | 100.00 |    71.43 |  100.00 |
+Γä╣   requestId.js             | 100.00 |   100.00 |  100.00 |
+Γä╣   requireAuth.js           |  92.00 |    90.00 |  100.00 | 23-24
+Γä╣   requireHttps.js          |  53.33 |    28.57 |  100.00 | 3-4 9-13
+Γä╣   requireRole.js           |  73.68 |    83.33 |  100.00 | 4-8
+Γä╣  models                    |        |          |         |
+Γä╣   Attempt.js               | 100.00 |   100.00 |  100.00 |
+Γä╣   AuditLog.js              | 100.00 |   100.00 |  100.00 |
+Γä╣   Exam.js                  | 100.00 |   100.00 |  100.00 |
+Γä╣   Questions.js             |  95.00 |    80.00 |  100.00 | 36-37
+Γä╣   Result.js                | 100.00 |   100.00 |  100.00 |
+Γä╣   User.js                  | 100.00 |   100.00 |  100.00 |
+Γä╣  routes                    |        |          |         |
+Γä╣   adminExam.routes.js      |  50.00 |   100.00 |    0.00 | 15-17 21-37
+Γä╣   adminQuestion.routes.js  |  81.01 |   100.00 |   28.57 | 26 44-48 55-56 63-67 74-75
+Γä╣   adminResults.routes.js   | 100.00 |   100.00 |  100.00 |
+Γä╣   attempt.routes.js        |  92.41 |   100.00 |   80.00 | 70-75
+Γä╣   audit.routes.js          |  50.00 |   100.00 |    0.00 | 11-23
+Γä╣   auth.routes.js           |  64.67 |    73.33 |   75.00 | 28-73 92-93 113-115 146-147
+Γä╣   exam.routes.js           |  90.00 |   100.00 |    0.00 | 15-16
+Γä╣   examAttempt.routes.js    | 100.00 |   100.00 |  100.00 |
+Γä╣   health.routes.js         | 100.00 |   100.00 |  100.00 |
+Γä╣   studentResults.routes.js | 100.00 |   100.00 |  100.00 |
+Γä╣  services                  |        |          |         |
+Γä╣   attempt.service.js       |  75.34 |    55.26 |  100.00 | 41-42 64-65 67-69 74-75 84-85 88-89 92-93 100-101 116-121 126-131 185-186 192-197 206-207 218-223 239-240 247-252 306-320 323-338 350-351 356-357 359-360 366-367 389-390 395-396 399-404 408-410 413-414 449-450 453-458 464-467 469-476
+Γä╣   audit.service.js         | 100.00 |    62.50 |  100.00 |
+Γä╣   exam.service.js          |  13.04 |   100.00 |    0.00 | 6-8 10-25 28-32 35-36 39-92
+Γä╣   grading.service.js       |  66.67 |    70.59 |   83.33 | 13-29 33-34 36-37 58-64
+Γä╣   question.service.js      |  64.71 |    66.67 |   60.00 | 15-16 19-20 34-35 42-43 46-47 61-73 76-77 80-81 84-85 89-90 92-93 109-114 117-119
+Γä╣   reporting.service.js     |  92.38 |    51.52 |  100.00 | 72-79
+Γä╣   studentExam.service.js   |  13.64 |   100.00 |    0.00 | 4-22
+Γä╣  utils                     |        |          |         |
+Γä╣   jwt.js                   |  90.00 |    75.00 |  100.00 | 13-14 37-38
+Γä╣   password.js              |  95.00 |    87.50 |  100.00 | 24-25
+Γä╣ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Γä╣ all files                  |  76.76 |    70.06 |   77.27 |
+Γä╣ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Γä╣ end of coverage report

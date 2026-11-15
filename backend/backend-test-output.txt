@@ -1,0 +1,90 @@
+﻿✔ TC-08: Health endpoint returns JSON content type (201.6501ms)
+✔ TC-07: Malformed JSON returns HTTP 400 (67.6729ms)
+✔ JSON request bodies larger than 1 MB return HTTP 413 (26.1122ms)
+✔ TC-03: Unsupported HTTP method returns 404 (6.9342ms)
+✔ TC-05: Each request receives a unique request ID (25.312ms)
+✔ TC-01: Health endpoint returns HTTP 200 (15.9176ms)
+✔ TC-06: Unknown route returns a structured 404 error (8.3614ms)
+✔ Sprint 1: Login requires the documented identifier contract (11.9271ms)
+✔ Sprint 1: Student tokens cannot access the question bank (18.5165ms)
+✔ attempt start requires a student and never returns the answer key (438.1236ms)
+✔ bulk and compatibility answer saves enforce ownership and are idempotent (216.5978ms)
+✔ submission freezes grading, returns the result, and safely handles concurrent retries (323.3975ms)
+✔ result percentiles use submitted attempts from the same exam and include ties (117.4374ms)
+✔ question CSV import validates every row before creating questions (48.092ms)
+✔ a save after the deadline is rejected and finalizes and grades the attempt (82.5889ms)
+✔ the background deadline sweep submits and grades disconnected attempts (60.7142ms)
+✔ locks an account after five failed logins (1138.4023ms)
+✔ successful login resets failed login state (143.9448ms)
+✔ signs a token with user id, role, and expiry (16.4176ms)
+✔ rejects a token with a tampered signature (3.2836ms)
+✔ rejects an expired token (2.6284ms)
+✔ requireAuth attaches the verified user to the request (5.4131ms)
+✔ requireAuth rejects a missing bearer token with 401 (0.5991ms)
+✔ requireRole blocks users with the wrong role (0.6097ms)
+✔ hashPassword creates a salted password hash (237.1472ms)
+✔ verifyPassword accepts the original password (221.0594ms)
+✔ verifyPassword rejects the wrong password (220.4232ms)
+✔ verifyPassword rejects malformed hashes (0.9913ms)
+✔ hashPassword rejects short passwords (2.3062ms)
+✔ API rate limiter returns a structured 429 after its configured request cap (239.3318ms)
+✔ API rate limiter allows 300 requests per IP in a minute by default (3787.4397ms)
+✔ login rate limiter normalizes identifiers and keeps distinct accounts separate (219.8657ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5307.4877
+ℹ start of coverage report
+ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ file                       | line % | branch % | funcs % | uncovered lines
+ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ src                        |        |          |         |
+ℹ  app.js                    | 100.00 |    33.33 |  100.00 |
+ℹ  middleware                |        |          |         |
+ℹ   asyncHandler.js          | 100.00 |   100.00 |  100.00 |
+ℹ   auditEvents.js           |  92.73 |    89.74 |   80.00 | 17-18 50-51
+ℹ   cors.js                  |  55.56 |    50.00 |  100.00 | 6-9 12-15
+ℹ   errorHandler.js          |  90.48 |    55.56 |  100.00 | 3-4
+ℹ   notFound.js              | 100.00 |   100.00 |  100.00 |
+ℹ   rateLimits.js            | 100.00 |    71.43 |  100.00 |
+ℹ   requestId.js             | 100.00 |   100.00 |  100.00 |
+ℹ   requireAuth.js           |  92.00 |    90.00 |  100.00 | 23-24
+ℹ   requireHttps.js          |  53.33 |    28.57 |  100.00 | 3-4 9-13
+ℹ   requireRole.js           |  73.68 |    83.33 |  100.00 | 4-8
+ℹ  models                    |        |          |         |
+ℹ   Attempt.js               | 100.00 |   100.00 |  100.00 |
+ℹ   AuditLog.js              | 100.00 |   100.00 |  100.00 |
+ℹ   Exam.js                  | 100.00 |   100.00 |  100.00 |
+ℹ   Questions.js             |  95.00 |    80.00 |  100.00 | 36-37
+ℹ   Result.js                | 100.00 |   100.00 |  100.00 |
+ℹ   User.js                  | 100.00 |   100.00 |  100.00 |
+ℹ  routes                    |        |          |         |
+ℹ   adminExam.routes.js      |  50.00 |   100.00 |    0.00 | 15-17 21-37
+ℹ   adminQuestion.routes.js  |  81.01 |   100.00 |   28.57 | 26 44-48 55-56 63-67 74-75
+ℹ   adminResults.routes.js   | 100.00 |   100.00 |  100.00 |
+ℹ   attempt.routes.js        |  92.41 |   100.00 |   80.00 | 70-75
+ℹ   audit.routes.js          |  50.00 |   100.00 |    0.00 | 11-23
+ℹ   auth.routes.js           |  64.67 |    73.33 |   75.00 | 28-73 92-93 113-115 146-147
+ℹ   exam.routes.js           |  90.00 |   100.00 |    0.00 | 15-16
+ℹ   examAttempt.routes.js    | 100.00 |   100.00 |  100.00 |
+ℹ   health.routes.js         | 100.00 |   100.00 |  100.00 |
+ℹ   studentResults.routes.js | 100.00 |   100.00 |  100.00 |
+ℹ  services                  |        |          |         |
+ℹ   attempt.service.js       |  75.34 |    55.26 |  100.00 | 41-42 64-65 67-69 74-75 84-85 88-89 92-93 100-101 116-121 126-131 185-186 192-197 206-207 218-223 239-240 247-252 306-320 323-338 350-351 356-357 359-360 366-367 389-390 395-396 399-404 408-410 413-414 449-450 453-458 464-467 469-476
+ℹ   audit.service.js         | 100.00 |    62.50 |  100.00 |
+ℹ   exam.service.js          |  13.04 |   100.00 |    0.00 | 6-8 10-25 28-32 35-36 39-92
+ℹ   grading.service.js       |  66.67 |    70.59 |   83.33 | 13-29 33-34 36-37 58-64
+ℹ   question.service.js      |  64.71 |    66.67 |   60.00 | 15-16 19-20 34-35 42-43 46-47 61-73 76-77 80-81 84-85 89-90 92-93 109-114 117-119
+ℹ   reporting.service.js     |  92.38 |    51.52 |  100.00 | 72-79
+ℹ   studentExam.service.js   |  13.64 |   100.00 |    0.00 | 4-22
+ℹ  utils                     |        |          |         |
+ℹ   jwt.js                   |  90.00 |    75.00 |  100.00 | 13-14 37-38
+ℹ   password.js              |  95.00 |    87.50 |  100.00 | 24-25
+ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ all files                  |  76.76 |    70.06 |   77.27 |
+ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report

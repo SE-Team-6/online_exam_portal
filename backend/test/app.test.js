@@ -29,6 +29,19 @@ test("TC-07: Malformed JSON returns HTTP 400", async () => {
   assert.ok(body.error.requestId);
 });
 
+test("JSON request bodies larger than 1 MB return HTTP 413", async () => {
+  const response = await fetch(`${baseUrl}/api/health`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: "x".repeat(1024 * 1024) }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 413);
+  assert.equal(body.error.code, "PAYLOAD_TOO_LARGE");
+  assert.equal(body.error.requestId, response.headers.get("x-request-id"));
+});
+
 test("TC-03: Unsupported HTTP method returns 404", async () => {
   const response = await fetch(`${baseUrl}/api/health`, {
     method: "POST",

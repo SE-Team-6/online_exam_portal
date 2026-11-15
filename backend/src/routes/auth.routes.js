@@ -2,6 +2,7 @@ import express from "express";
 import User from "../models/User.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { signToken } from "../utils/jwt.js";
+import { loginRateLimiter } from "../middleware/rateLimits.js";
 
 const router = express.Router();
 
@@ -72,7 +73,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res, next) => {
+router.post("/login", loginRateLimiter, async (req, res, next) => {
   try {
     const { identifier, password } = req.body ?? {};
 

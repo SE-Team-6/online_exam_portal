@@ -37,6 +37,14 @@
 | EXAM-SR-004 | Use signed, expiring JWTs and reject tampered tokens | 5.1.2 | Authentication / session | TBD | Not tested / mapping needed | SRS does not give a test-case reference for this row. |
 | EXAM-SR-005 | Log admin actions for audit purposes | 5.1.2 | Admin / audit | TC-OPS-01 (candidate) | TBD | Candidate link based on audit behavior; confirm the test verifies admin actions specifically. |
 
+## Additional SAD Security-Control Verification
+
+This implementation control is specified in SAD Section 3.9 and is recorded separately from the SRS requirement rows above.
+
+| Design reference | Control | Test case | Status | Evidence / comments |
+|---|---|---|---|---|
+| SAD §3.9 | Limit API/login request rates and cap JSON request bodies at 1 MB | TC-Sec-03 | P / pass | `backend/test/rateLimits.test.js` verifies the 300-request API cap, login cap and identifier isolation; `backend/test/app.test.js` verifies oversized JSON returns 413. Targeted run: 12/12 tests passed on 2026-11-15. |
+
 ## Execution evidence currently available
 
 The supplied Sprint 1 execution log records six automated backend tests as passed (health endpoint, unsupported method, unique request ID, unknown route, malformed JSON, and JSON content type) and five Postman checks as passed. These are infrastructure/API checks; the supplied evidence does **not** establish that the functional SRS requirements above have passed.

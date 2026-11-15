@@ -349,6 +349,54 @@ test("submission freezes grading, returns the result, and safely handles concurr
   assert.equal(forbiddenReport.status, 403);
 });
 
+test("result percentiles use submitted attempts from the same exam and include ties", async () => {
+  const { exam: cohortExam } = await createExamFixture();
+  const { exam: otherExam } = await createExamFixture();
+  const submittedAt = new Date();
+  const cohortResults = [
+    { examId: cohortExam._id, studentId: student._id, score: 0 },
+    { examId: cohortExam._id, studentId: student._id, score: 5 },
+    { examId: cohortExam._id, studentId: otherStudent._id, score: 5 },
+    { examId: cohortExam._id, studentId: otherStudent._id, score: 10 },
+    { examId: otherExam._id, studentId: student._id, score: 0 },
+    { examId: otherExam._id, studentId: otherStudent._id, score: 0 },
+    { examId: otherExam._id, studentId: otherStudent._id, score: 0 },
+  ].map(({ examId, studentId, score }) => ({
+    examId,
+    attemptId: new mongoose.Types.ObjectId(),
+    studentId,
+    score,
+    maxScore: 10,
+    totalQuestions: 10,
+    submittedAt,
+  }));
+  await Result.create(cohortResults);
+
+  const studentResponse = await request("/api/student/results", {
+    token: studentToken,
+  });
+  const studentBody = await studentResponse.json();
+  assert.equal(studentResponse.status, 200);
+  const studentTarget = studentBody.results.find(
+    (result) => result.examId === cohortExam._id.toString() && result.score === 5,
+  );
+  assert.ok(studentTarget);
+  assert.equal(studentTarget.percentile, 75);
+
+  const adminResponse = await request("/api/admin/results", {
+    token: instructorToken,
+  });
+  const adminBody = await adminResponse.json();
+  assert.equal(adminResponse.status, 200);
+  const examResults = adminBody.results.filter(
+    (result) => result.examId === cohortExam._id.toString(),
+  );
+  assert.deepEqual(
+    examResults.map(({ score, percentile }) => [score, percentile]).sort((a, b) => a[0] - b[0]),
+    [[0, 25], [5, 75], [5, 75], [10, 100]],
+  );
+});
+
 test("question CSV import validates every row before creating questions", async () => {
   const question = {
     stem: "Imported test question",

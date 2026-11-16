@@ -106,16 +106,21 @@ after(async () => {
   }
 });
 
-test("audit log endpoint requires an admin", async () => {
+test("audit log endpoint requires an instructor or admin", async () => {
   const anonymous = await fetch(`${baseUrl}/api/admin/audit-logs`);
   assert.equal(anonymous.status, 401);
 
-  for (const token of [studentToken, instructorToken]) {
-    const response = await fetch(`${baseUrl}/api/admin/audit-logs`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    assert.equal(response.status, 403);
-  }
+  const studentResponse = await fetch(`${baseUrl}/api/admin/audit-logs`, {
+    headers: { Authorization: `Bearer ${studentToken}` },
+  });
+  assert.equal(studentResponse.status, 403);
+
+  const instructorResponse = await fetch(`${baseUrl}/api/admin/audit-logs`, {
+    headers: { Authorization: `Bearer ${instructorToken}` },
+  });
+  assert.equal(instructorResponse.status, 200);
+  const instructorBody = await instructorResponse.json();
+  assert.ok(instructorBody.entries.some((entry) => entry.requestId === requestIds[0]));
 });
 
 test("admin can filter audit logs and does not receive metadata", async () => {

@@ -16,6 +16,8 @@ const questionSnapshotSchema = new mongoose.Schema(
   {
     questionId: { type: mongoose.Schema.Types.ObjectId, required: true },
     correctOptionId: { type: String, required: true },
+    questionVersion: { type: Number, min: 1 },
+    optionIds: { type: [String], default: [] },
   },
   { _id: false }
 );

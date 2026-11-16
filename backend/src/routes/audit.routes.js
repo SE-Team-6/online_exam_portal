@@ -5,7 +5,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
 
 const router = express.Router();
-router.use(requireAuth, requireRole("admin"));
+router.use(requireAuth, requireRole("instructor", "admin"));
 
 router.get("/", asyncHandler(async (req, res) => {
   const requestedLimit = Number.parseInt(req.query.limit, 10);

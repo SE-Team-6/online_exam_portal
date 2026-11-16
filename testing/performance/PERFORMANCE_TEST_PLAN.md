@@ -37,8 +37,8 @@ Evaluate API response time against the EXAM-NF-001 target of p90 <= 2,000 ms. Th
 | Failed warm-up requests | 0 |
 | Concurrency | 5 |
 | Total measurement time | 0.22 seconds |
-| Average response time | 7.34 ms |
-| p90 response time | 10.43 ms |
+| Average response time | 8.06 ms |
+| p90 response time | 12.19 ms |
 | p90 threshold | 2,000 ms |
 | Result for this endpoint/configuration | PASS |
 The measured p90 is below the configured threshold, and no measured or warm-up requests failed. This result applies only to the local health endpoint and this test configuration.

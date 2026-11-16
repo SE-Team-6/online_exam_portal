@@ -1,5 +1,5 @@
 
-test("TC-08: Health endpoint returns JSON content type", async () => {
+test("Health endpoint returns status and uptime", async () => {
   const response = await fetch(`${baseUrl}/api/health`);
 
   assert.equal(response.status, 200);
@@ -10,6 +10,17 @@ test("TC-08: Health endpoint returns JSON content type", async () => {
 
   const body = await response.json();
   assert.equal(body.status, "ok");
+  assert.equal(Number.isFinite(body.uptimeSeconds), true);
+  assert.ok(body.checkedAt);
+});
+
+test("Readiness reports not_ready when MongoDB is disconnected", async () => {
+  const response = await fetch(`${baseUrl}/api/health/ready`);
+  const body = await response.json();
+
+  assert.equal(response.status, 503);
+  assert.equal(body.status, "not_ready");
+  assert.equal(body.checks.mongodb, "unavailable");
 });
 
 test("TC-07: Malformed JSON returns HTTP 400", async () => {

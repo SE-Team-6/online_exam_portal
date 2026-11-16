@@ -18,3 +18,6 @@ The default local seed password is `Sprint1Pass123!`. Do not use it outside loca
 
 The API contract is documented in [docs/api.md](docs/api.md). Start the frontend separately with
 `cd frontend`, `npm install`, and `npm run dev`.
+
+Availability targets and the procedure for measuring them are documented in
+[docs/availability.md](docs/availability.md).

@@ -477,3 +477,12 @@ test("the background deadline sweep submits and grades disconnected attempts", a
   assert.equal(result.score, 0);
   assert.equal(result.maxScore, 2);
 });
+
+test("Readiness reports ready when MongoDB is connected", async () => {
+  const response = await fetch(`${baseUrl}/api/health/ready`);
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.status, "ready");
+  assert.equal(body.checks.mongodb, "ok");
+});

@@ -1,0 +1,40 @@
+﻿
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90mC:/Users/Keerthi/OneDrive/SE/online_exam_portal/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/utils/questionCsv.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/components/ProtectedRoute.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[33m 357[2mms[22m[39m
+     [33m[2m✓[22m[39m redirects visitors without a session to login [33m 317[2mms[22m[39m
+ [32m✓[39m src/pages/Results.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[33m 584[2mms[22m[39m
+     [33m[2m✓[22m[39m shows a student's score and correctly formats percentile ordinals [33m 513[2mms[22m[39m
+ [32m✓[39m src/pages/QuestionBank.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 475[2mms[22m[39m
+     [33m[2m✓[22m[39m sends parsed questions to the import API and reports success [33m 470[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 19:18:33
+[2m   Duration [22m 6.08s[2m (transform 721ms, setup 3.61s, import 1.78s, tests 1.45s, environment 11.03s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   20.77 |    14.61 |    19.6 |   20.18 |
+ src               |       0 |        0 |       0 |       0 |
+  App.jsx          |       0 |        0 |       0 |       0 | 23-467
+  main.jsx         |       0 |      100 |     100 |       0 | 8
+ src/components    |   72.72 |    61.53 |     100 |   72.72 |
+  ...ctedRoute.jsx |   72.72 |    61.53 |     100 |   72.72 | 16-20
+ src/pages         |   15.28 |    10.08 |   16.03 |   15.51 |
+  AuditLogs.jsx    |       0 |        0 |       0 |       0 | 5-85
+  ...anagement.jsx |       0 |        0 |       0 |       0 | 6-307
+  ...orResults.jsx |       0 |        0 |       0 |       0 | 5-194
+  QuestionBank.jsx |   45.34 |    27.08 |      40 |   46.83 | ...09-217,236-239
+  Results.jsx      |     100 |    74.19 |     100 |     100 | 7-32
+  StudentExam.jsx  |       0 |        0 |       0 |       0 | 9-365
+ src/services      |       0 |        0 |       0 |       0 |
+  api.js           |       0 |        0 |       0 |       0 | 2-35
+  ...mptService.js |       0 |      100 |       0 |       0 | 5-32
+ src/utils         |   98.21 |    91.17 |     100 |     100 |
+  questionCsv.js   |   98.21 |    91.17 |     100 |     100 | 53,67-73
+-------------------|---------|----------|---------|---------|-------------------

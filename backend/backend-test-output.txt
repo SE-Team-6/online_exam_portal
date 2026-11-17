@@ -1,90 +1,238 @@
-﻿✔ TC-08: Health endpoint returns JSON content type (201.6501ms)
-✔ TC-07: Malformed JSON returns HTTP 400 (67.6729ms)
-✔ JSON request bodies larger than 1 MB return HTTP 413 (26.1122ms)
-✔ TC-03: Unsupported HTTP method returns 404 (6.9342ms)
-✔ TC-05: Each request receives a unique request ID (25.312ms)
-✔ TC-01: Health endpoint returns HTTP 200 (15.9176ms)
-✔ TC-06: Unknown route returns a structured 404 error (8.3614ms)
-✔ Sprint 1: Login requires the documented identifier contract (11.9271ms)
-✔ Sprint 1: Student tokens cannot access the question bank (18.5165ms)
-✔ attempt start requires a student and never returns the answer key (438.1236ms)
-✔ bulk and compatibility answer saves enforce ownership and are idempotent (216.5978ms)
-✔ submission freezes grading, returns the result, and safely handles concurrent retries (323.3975ms)
-✔ result percentiles use submitted attempts from the same exam and include ties (117.4374ms)
-✔ question CSV import validates every row before creating questions (48.092ms)
-✔ a save after the deadline is rejected and finalizes and grades the attempt (82.5889ms)
-✔ the background deadline sweep submits and grades disconnected attempts (60.7142ms)
-✔ locks an account after five failed logins (1138.4023ms)
-✔ successful login resets failed login state (143.9448ms)
-✔ signs a token with user id, role, and expiry (16.4176ms)
-✔ rejects a token with a tampered signature (3.2836ms)
-✔ rejects an expired token (2.6284ms)
-✔ requireAuth attaches the verified user to the request (5.4131ms)
-✔ requireAuth rejects a missing bearer token with 401 (0.5991ms)
-✔ requireRole blocks users with the wrong role (0.6097ms)
-✔ hashPassword creates a salted password hash (237.1472ms)
-✔ verifyPassword accepts the original password (221.0594ms)
-✔ verifyPassword rejects the wrong password (220.4232ms)
-✔ verifyPassword rejects malformed hashes (0.9913ms)
-✔ hashPassword rejects short passwords (2.3062ms)
-✔ API rate limiter returns a structured 429 after its configured request cap (239.3318ms)
-✔ API rate limiter allows 300 requests per IP in a minute by default (3787.4397ms)
-✔ login rate limiter normalizes identifiers and keeps distinct accounts separate (219.8657ms)
-ℹ tests 32
-ℹ suites 0
-ℹ pass 32
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 5307.4877
-ℹ start of coverage report
-ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ℹ file                       | line % | branch % | funcs % | uncovered lines
-ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ℹ src                        |        |          |         |
-ℹ  app.js                    | 100.00 |    33.33 |  100.00 |
-ℹ  middleware                |        |          |         |
-ℹ   asyncHandler.js          | 100.00 |   100.00 |  100.00 |
-ℹ   auditEvents.js           |  92.73 |    89.74 |   80.00 | 17-18 50-51
-ℹ   cors.js                  |  55.56 |    50.00 |  100.00 | 6-9 12-15
-ℹ   errorHandler.js          |  90.48 |    55.56 |  100.00 | 3-4
-ℹ   notFound.js              | 100.00 |   100.00 |  100.00 |
-ℹ   rateLimits.js            | 100.00 |    71.43 |  100.00 |
-ℹ   requestId.js             | 100.00 |   100.00 |  100.00 |
-ℹ   requireAuth.js           |  92.00 |    90.00 |  100.00 | 23-24
-ℹ   requireHttps.js          |  53.33 |    28.57 |  100.00 | 3-4 9-13
-ℹ   requireRole.js           |  73.68 |    83.33 |  100.00 | 4-8
-ℹ  models                    |        |          |         |
-ℹ   Attempt.js               | 100.00 |   100.00 |  100.00 |
-ℹ   AuditLog.js              | 100.00 |   100.00 |  100.00 |
-ℹ   Exam.js                  | 100.00 |   100.00 |  100.00 |
-ℹ   Questions.js             |  95.00 |    80.00 |  100.00 | 36-37
-ℹ   Result.js                | 100.00 |   100.00 |  100.00 |
-ℹ   User.js                  | 100.00 |   100.00 |  100.00 |
-ℹ  routes                    |        |          |         |
-ℹ   adminExam.routes.js      |  50.00 |   100.00 |    0.00 | 15-17 21-37
-ℹ   adminQuestion.routes.js  |  81.01 |   100.00 |   28.57 | 26 44-48 55-56 63-67 74-75
-ℹ   adminResults.routes.js   | 100.00 |   100.00 |  100.00 |
-ℹ   attempt.routes.js        |  92.41 |   100.00 |   80.00 | 70-75
-ℹ   audit.routes.js          |  50.00 |   100.00 |    0.00 | 11-23
-ℹ   auth.routes.js           |  64.67 |    73.33 |   75.00 | 28-73 92-93 113-115 146-147
-ℹ   exam.routes.js           |  90.00 |   100.00 |    0.00 | 15-16
-ℹ   examAttempt.routes.js    | 100.00 |   100.00 |  100.00 |
-ℹ   health.routes.js         | 100.00 |   100.00 |  100.00 |
-ℹ   studentResults.routes.js | 100.00 |   100.00 |  100.00 |
-ℹ  services                  |        |          |         |
-ℹ   attempt.service.js       |  75.34 |    55.26 |  100.00 | 41-42 64-65 67-69 74-75 84-85 88-89 92-93 100-101 116-121 126-131 185-186 192-197 206-207 218-223 239-240 247-252 306-320 323-338 350-351 356-357 359-360 366-367 389-390 395-396 399-404 408-410 413-414 449-450 453-458 464-467 469-476
-ℹ   audit.service.js         | 100.00 |    62.50 |  100.00 |
-ℹ   exam.service.js          |  13.04 |   100.00 |    0.00 | 6-8 10-25 28-32 35-36 39-92
-ℹ   grading.service.js       |  66.67 |    70.59 |   83.33 | 13-29 33-34 36-37 58-64
-ℹ   question.service.js      |  64.71 |    66.67 |   60.00 | 15-16 19-20 34-35 42-43 46-47 61-73 76-77 80-81 84-85 89-90 92-93 109-114 117-119
-ℹ   reporting.service.js     |  92.38 |    51.52 |  100.00 | 72-79
-ℹ   studentExam.service.js   |  13.64 |   100.00 |    0.00 | 4-22
-ℹ  utils                     |        |          |         |
-ℹ   jwt.js                   |  90.00 |    75.00 |  100.00 | 13-14 37-38
-ℹ   password.js              |  95.00 |    87.50 |  100.00 | 24-25
-ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ℹ all files                  |  76.76 |    70.06 |   77.27 |
-ℹ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ℹ end of coverage report
+TAP version 13
+# Subtest: Health endpoint returns status and uptime
+ok 1 - Health endpoint returns status and uptime
+  ---
+  duration_ms: 101.5161
+  type: 'test'
+  ...
+# Subtest: Readiness reports not_ready when MongoDB is disconnected
+ok 2 - Readiness reports not_ready when MongoDB is disconnected
+  ---
+  duration_ms: 10.0147
+  type: 'test'
+  ...
+# Subtest: TC-07: Malformed JSON returns HTTP 400
+ok 3 - TC-07: Malformed JSON returns HTTP 400
+  ---
+  duration_ms: 51.3707
+  type: 'test'
+  ...
+# Subtest: JSON request bodies larger than 1 MB return HTTP 413
+ok 4 - JSON request bodies larger than 1 MB return HTTP 413
+  ---
+  duration_ms: 17.8275
+  type: 'test'
+  ...
+# Subtest: TC-03: Unsupported HTTP method returns 404
+ok 5 - TC-03: Unsupported HTTP method returns 404
+  ---
+  duration_ms: 15.0733
+  type: 'test'
+  ...
+# Subtest: TC-05: Each request receives a unique request ID
+ok 6 - TC-05: Each request receives a unique request ID
+  ---
+  duration_ms: 11.3021
+  type: 'test'
+  ...
+# Subtest: TC-01: Health endpoint returns HTTP 200
+ok 7 - TC-01: Health endpoint returns HTTP 200
+  ---
+  duration_ms: 4.5676
+  type: 'test'
+  ...
+# Subtest: TC-06: Unknown route returns a structured 404 error
+ok 8 - TC-06: Unknown route returns a structured 404 error
+  ---
+  duration_ms: 5.6712
+  type: 'test'
+  ...
+# Subtest: Sprint 1: Login requires the documented identifier contract
+ok 9 - Sprint 1: Login requires the documented identifier contract
+  ---
+  duration_ms: 9.3193
+  type: 'test'
+  ...
+# Subtest: Sprint 1: Student tokens cannot access the question bank
+ok 10 - Sprint 1: Student tokens cannot access the question bank
+  ---
+  duration_ms: 12.1788
+  type: 'test'
+  ...
+# Subtest: attempt start requires a student and never returns the answer key
+ok 11 - attempt start requires a student and never returns the answer key
+  ---
+  duration_ms: 280.7078
+  type: 'test'
+  ...
+# Subtest: bulk and compatibility answer saves enforce ownership and are idempotent
+ok 12 - bulk and compatibility answer saves enforce ownership and are idempotent
+  ---
+  duration_ms: 161.61
+  type: 'test'
+  ...
+# Subtest: submission freezes grading, returns the result, and safely handles concurrent retries
+ok 13 - submission freezes grading, returns the result, and safely handles concurrent retries
+  ---
+  duration_ms: 222.2642
+  type: 'test'
+  ...
+# Subtest: result percentiles use submitted attempts from the same exam and include ties
+ok 14 - result percentiles use submitted attempts from the same exam and include ties
+  ---
+  duration_ms: 72.838
+  type: 'test'
+  ...
+# Subtest: question CSV import validates every row before creating questions
+ok 15 - question CSV import validates every row before creating questions
+  ---
+  duration_ms: 40.4045
+  type: 'test'
+  ...
+# Subtest: a save after the deadline is rejected and finalizes and grades the attempt
+ok 16 - a save after the deadline is rejected and finalizes and grades the attempt
+  ---
+  duration_ms: 64.1614
+  type: 'test'
+  ...
+# Subtest: the background deadline sweep submits and grades disconnected attempts while preserving saved answers
+ok 17 - the background deadline sweep submits and grades disconnected attempts while preserving saved answers
+  ---
+  duration_ms: 76.1639
+  type: 'test'
+  ...
+# Subtest: exam keeps its question version after the question bank is edited
+ok 18 - exam keeps its question version after the question bank is edited
+  ---
+  duration_ms: 119.5621
+  type: 'test'
+  ...
+# Subtest: Readiness reports ready when MongoDB is connected
+ok 19 - Readiness reports ready when MongoDB is connected
+  ---
+  duration_ms: 4.8311
+  type: 'test'
+  ...
+# Subtest: audit log endpoint requires an instructor or admin
+ok 20 - audit log endpoint requires an instructor or admin
+  ---
+  duration_ms: 246.7243
+  type: 'test'
+  ...
+# Subtest: admin can filter audit logs and does not receive metadata
+ok 21 - admin can filter audit logs and does not receive metadata
+  ---
+  duration_ms: 15.4579
+  type: 'test'
+  ...
+# Subtest: audit log limit is clamped to 100
+ok 22 - audit log limit is clamped to 100
+  ---
+  duration_ms: 14.7137
+  type: 'test'
+  ...
+# Subtest: locks an account after five failed logins
+ok 23 - locks an account after five failed logins
+  ---
+  duration_ms: 774.9334
+  type: 'test'
+  ...
+# Subtest: successful login resets failed login state
+ok 24 - successful login resets failed login state
+  ---
+  duration_ms: 105.3773
+  type: 'test'
+  ...
+# Subtest: signs a token with user id, role, and expiry
+ok 25 - signs a token with user id, role, and expiry
+  ---
+  duration_ms: 8.861
+  type: 'test'
+  ...
+# Subtest: rejects a token with a tampered signature
+ok 26 - rejects a token with a tampered signature
+  ---
+  duration_ms: 2.2247
+  type: 'test'
+  ...
+# Subtest: rejects an expired token
+ok 27 - rejects an expired token
+  ---
+  duration_ms: 1.4262
+  type: 'test'
+  ...
+# Subtest: requireAuth attaches the verified user to the request
+ok 28 - requireAuth attaches the verified user to the request
+  ---
+  duration_ms: 2.5589
+  type: 'test'
+  ...
+# Subtest: requireAuth rejects a missing bearer token with 401
+ok 29 - requireAuth rejects a missing bearer token with 401
+  ---
+  duration_ms: 0.4029
+  type: 'test'
+  ...
+# Subtest: requireRole blocks users with the wrong role
+ok 30 - requireRole blocks users with the wrong role
+  ---
+  duration_ms: 0.3763
+  type: 'test'
+  ...
+# Subtest: hashPassword creates a salted password hash
+ok 31 - hashPassword creates a salted password hash
+  ---
+  duration_ms: 151.2763
+  type: 'test'
+  ...
+# Subtest: verifyPassword accepts the original password
+ok 32 - verifyPassword accepts the original password
+  ---
+  duration_ms: 152.0873
+  type: 'test'
+  ...
+# Subtest: verifyPassword rejects the wrong password
+ok 33 - verifyPassword rejects the wrong password
+  ---
+  duration_ms: 157.3671
+  type: 'test'
+  ...
+# Subtest: verifyPassword rejects malformed hashes
+ok 34 - verifyPassword rejects malformed hashes
+  ---
+  duration_ms: 1.2448
+  type: 'test'
+  ...
+# Subtest: hashPassword rejects short passwords
+ok 35 - hashPassword rejects short passwords
+  ---
+  duration_ms: 2.1337
+  type: 'test'
+  ...
+# Subtest: API rate limiter returns a structured 429 after its configured request cap
+ok 36 - API rate limiter returns a structured 429 after its configured request cap
+  ---
+  duration_ms: 125.0406
+  type: 'test'
+  ...
+# Subtest: API rate limiter allows 300 requests per IP in a minute by default
+ok 37 - API rate limiter allows 300 requests per IP in a minute by default
+  ---
+  duration_ms: 4048.3715
+  type: 'test'
+  ...
+# Subtest: login rate limiter normalizes identifiers and keeps distinct accounts separate
+ok 38 - login rate limiter normalizes identifiers and keeps distinct accounts separate
+  ---
+  duration_ms: 204.0255
+  type: 'test'
+  ...
+1..38
+# tests 38
+# suites 0
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8104.0394

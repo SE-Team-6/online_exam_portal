@@ -1,4 +1,4 @@
-﻿# Performance Test Plan
+# Performance Test Plan
 ## Objective
 Evaluate API response time against the EXAM-NF-001 target of p90 <= 2,000 ms. This run measures only the health endpoint and is not sufficient to declare the full requirement satisfied.
 ## Scope and configuration
@@ -25,8 +25,8 @@ Evaluate API response time against the EXAM-NF-001 target of p90 <= 2,000 ms. Th
 5. Save the benchmark output in `testing/performance/performance-results.txt`.
 6. Stop the temporary server after testing.
 ## Latest local result
-**Test date:** 2026-11-15  
-**Commit:** `882cfd1`  
+**Test date:** 2026-11-17
+**Commit:** `af700d4`
 **Runtime:** Node.js `v24.19.0`
 | Metric | Result |
 | --- | ---: |
@@ -36,9 +36,9 @@ Evaluate API response time against the EXAM-NF-001 target of p90 <= 2,000 ms. Th
 | Failed responses | 0 |
 | Failed warm-up requests | 0 |
 | Concurrency | 5 |
-| Total measurement time | 0.22 seconds |
-| Average response time | 8.06 ms |
-| p90 response time | 12.19 ms |
+| Total measurement time | 0.20 seconds |
+| Average response time | 7.45 ms |
+| p90 response time | 13.87 ms |
 | p90 threshold | 2,000 ms |
 | Result for this endpoint/configuration | PASS |
 The measured p90 is below the configured threshold, and no measured or warm-up requests failed. This result applies only to the local health endpoint and this test configuration.

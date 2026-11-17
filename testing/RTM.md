@@ -2,7 +2,7 @@
 **Project:** Online Exam Portal
 **Team:** 6
 **Prepared by:** Test Engineer
-**Last updated:** 15 November 2026
+**Last updated:** 17 November 2026
 **Source:** `6_SRS_MiniProject.pdf` (Section 8, with requirement details from Sections 4-5) and `team6_TestPlan_MiniProject.pdf` (Sections 8, 13 and 14)
 **Status:** Working draft - statuses reflect the available execution evidence.
 ## Status legend
@@ -19,7 +19,7 @@
 | EXAM-F-002 | Hash and salt passwords; never store or log plaintext passwords | 4.1 | Authentication / security | TC-Auth-02 | Partial | Backend password tests passed, including creation of a salted password hash. `backend/src/utils/password.js` uses Node.js scrypt with a random salt. Complete database-storage and plaintext logging verification remains outstanding. |
 | EXAM-F-003 | Lock account after five consecutive failed login attempts and log the event | 4.1 | Authentication / security | TC-Auth-03 | Partial | Backend tests cover account lockout after five failed attempts and successful-login reset. Evidence that the lockout event is logged as required still needs confirmation. |
 | EXAM-F-010 | Load exam questions in randomized order and start a server-side countdown timer | 4.2; SRS Section 8 | Exam / timer | TC-Exam-01; SV-05; SV-06 | Partial | On 2026-11-15, the student exam page displayed 10 questions and a visible countdown that decreased during the browser session. Randomized question order and server-side enforcement of the timer were not independently verified. |
-| EXAM-F-011 | Auto-submit the exam when the timer expires and save answered questions | 4.2 | Exam / submission | TC-Exam-02 | N - Not tested | Timer-expiry auto-submission has not been verified by a recorded test. |
+| EXAM-F-011 | Auto-submit the exam when the timer expires and save answered questions | 4.2 | Exam / submission | TC-Exam-02; `backend/test/attempt.integration.test.js` | Partial | On 2026-11-17, both the late-save expiry test and background deadline-sweep test passed. The strengthened background test saved Option A before expiry and verified that it remained after automatic submission. It also verified the expiry timestamp and generated result. The attempt integration suite passed 9/9 and the full backend suite passed 38/38 on source commit `62c8d45`, using isolated database `oep_timer_validation_20261117`. The expiry worker is invoked directly in the test; live five-second scheduler execution and browser countdown reaching zero have not been verified end to end. |
 | EXAM-F-020-EXAM-F-025 | Instructor question-bank management: create, edit, tag, delete, CSV bulk import and version question banks | 4.3 | Question bank / instructor | Frontend QuestionBank test; backend CSV import test | Partial / mapping needed | Backend CSV import validation and the frontend question-import API interaction test passed. The November 15 browser run was student-only. Create, edit, tag, delete, versioning and complete instructor workflows are not verified. Individual requirement-to-test mappings still need confirmation. |
 | EXAM-F-030, EXAM-F-032-EXAM-F-034 | Automatically grade submissions, compute scores and display results/analytics | 4.4 | Evaluation / results | Attempt integration tests; SV-10; SV-11; SV-12 | Partial | Backend attempt integration tests cover grading and result behavior. On 2026-11-15, a student submitted the sample exam and the dashboard and detailed result page displayed 1/10 and 10.0%. The broader analytics and individual requirement mappings remain incomplete. |
 | EXAM-F-031 | Compute a percentile against submitted attempts for the same exam | 4.4 | Evaluation / reporting | TC-Eval-04; SV-12 | P - Pass | `backend/test/attempt.integration.test.js`: 7/7 tests passed on 2026-11-15. Evidence includes cohort isolation and tied scores. The browser result page also displayed a percentile; the isolated browser database contained only one student attempt, so that display alone does not establish multi-student cohort behavior. |
@@ -42,10 +42,10 @@ This implementation control is specified in SAD Section 3.9 and is recorded sepa
 ## Latest automated test execution summary
 | Test suite | Result | Coverage |
 |---|---|---|
-| Backend | 32/32 passed; 0 failed; 0 skipped | Lines 76.76%; branches 70.06%; functions 77.27%. Native Node coverage output does not provide an aggregate statement percentage. |
+| Backend | 38/38 passed; 0 failed; 0 skipped on 2026-11-17, source commit `62c8d45` | Lines 80.31%; branches 68.75%; functions 83.90%. Native Node coverage output does not provide an aggregate statement percentage. |
 | Frontend | 12/12 passed across 4 test files; 0 failed | Statements 20.77%; branches 14.61%; functions 19.60%; lines 20.18%. |
 | Manual student browser workflow | 12/12 documented checks passed on 2026-11-15, commit `0ce4ad7` | Local browser run using isolated validation database; see current system-validation evidence below. |
-These are automated test-suite results. They do not mean that every SRS requirement in this matrix has passed.
+The backend row reflects the 17 November 2026 execution on commit `62c8d45`. The frontend and browser rows retain their separate 15 November 2026 evidence on commit `0ce4ad7`. These results do not mean that every SRS requirement in this matrix has passed.
 ## Execution evidence and limitations
 ### Sprint 1
 The supplied Sprint 1 execution log records six automated backend checks as passed and five Postman checks as passed. These cover infrastructure and API behavior. They do not independently establish that the functional SRS requirements above have passed.
@@ -69,6 +69,16 @@ A retest on 2026-11-15 returned HTTP 401 with error code `INVALID_CREDENTIALS` f
 | Detailed results | Results page showed 1/10, 10.0%, and 100th percentile. |
 The browser validation used a separate local MongoDB database, not the original `online_exam_portal` database. The isolated database contained one submitted student attempt; the displayed 100th percentile does not establish percentile behavior across a larger cohort. The Student Exam page appeared less styled than the dashboard; this is recorded as a visual consistency observation, not a functional failure.
 This run did not test registration, administrator or instructor workflows, timer-expiry auto-submission, or large-cohort percentile behavior. The historical 7/7 browser run dated 2026-11-10 remains separate and is not included in the current 12-check result.
+### Automatic expiry verification - 17 November 2026
+**Source commit:** `62c8d45`
+**Isolated database:** `oep_timer_validation_20261117`
+- Targeted expiry tests: 2/2 passed.
+- Complete `attempt.integration.test.js`: 9/9 passed.
+- Complete backend test suite: 38/38 passed, 0 failed.
+- The background expiry test saved Option A before expiry and confirmed that the answer remained in the submitted attempt.
+- The test verified the submission timestamp and generated result.
+- Code inspection confirmed an initial expiry sweep and a five-second recurring interval in `backend/src/server.js`.
+The tests call `autoSubmitExpiredAttempts()` directly with an expired test fixture. They do not independently prove the live scheduler interval fires or that the browser automatically transitions at countdown zero. Therefore EXAM-F-011 remains Partial pending end-to-end verification.
 ### Current performance evidence
 The 2026-11-15 local health-endpoint test recorded:
 - Tested repository commit: `882cfd1`.

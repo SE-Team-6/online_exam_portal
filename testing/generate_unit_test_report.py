@@ -24,50 +24,56 @@ def read_log(path):
     return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
 backend_log = read_log(BACKEND_LOG)
 frontend_log = read_log(FRONTEND_LOG)
-if not re.search(r"tests\s+32", backend_log):
-    raise RuntimeError("Backend log does not confirm 32 tests.")
-if not re.search(r"pass\s+32", backend_log) or not re.search(r"fail\s+0", backend_log):
-    raise RuntimeError("Backend log does not confirm 32 passed and 0 failed.")
+if not re.search(r"tests\s+38", backend_log):
+    raise RuntimeError("Backend log does not confirm 38 tests.")
+if not re.search(r"pass\s+38", backend_log) or not re.search(r"fail\s+0", backend_log):
+    raise RuntimeError("Backend log does not confirm 38 passed and 0 failed.")
 if not re.search(r"Tests\s+12\s+passed", frontend_log, re.IGNORECASE):
     raise RuntimeError("Frontend log does not confirm 12 passed tests.")
 if not re.search(r"Test Files\s+4\s+passed", frontend_log, re.IGNORECASE):
     raise RuntimeError("Frontend log does not confirm 4 passed test files.")
 BACKEND_CASES = [
-    "TC-08: Health endpoint returns JSON content type",
-    "TC-07: Malformed JSON returns HTTP 400",
-    "JSON request bodies larger than 1 MB return HTTP 413",
-    "TC-03: Unsupported HTTP method returns 404",
-    "TC-05: Each request receives a unique request ID",
-    "TC-01: Health endpoint returns HTTP 200",
-    "TC-06: Unknown route returns a structured 404 error",
-    "Sprint 1: Login requires the documented identifier contract",
-    "Sprint 1: Student tokens cannot access the question bank",
-    "Attempt start requires a student and never returns the answer key",
-    "Bulk and compatibility answer saves enforce ownership and are idempotent",
-    "Submission freezes grading, returns the result, and safely handles concurrent retries",
-    "Result percentiles use submitted attempts from the same exam and include ties",
-    "Question CSV import validates every row before creating questions",
-    "A save after the deadline is rejected and finalizes and grades the attempt",
-    "The background deadline sweep submits and grades disconnected attempts",
-    "Locks an account after five failed logins",
-    "Successful login resets failed login state",
-    "Signs a token with user ID, role, and expiry",
-    "Rejects a token with a tampered signature",
-    "Rejects an expired token",
-    "requireAuth attaches the verified user to the request",
-    "requireAuth rejects a missing bearer token with 401",
-    "requireRole blocks users with the wrong role",
-    "hashPassword creates a salted password hash",
-    "verifyPassword accepts the original password",
-    "verifyPassword rejects the wrong password",
-    "verifyPassword rejects malformed hashes",
-    "hashPassword rejects short passwords",
-    "API rate limiter returns a structured 429 after its configured request cap",
-    "API rate limiter allows 300 requests per IP in a minute by default",
-    "Login rate limiter normalizes identifiers and keeps distinct accounts separate",
+    'Health endpoint returns status and uptime',
+    'Readiness reports not_ready when MongoDB is disconnected',
+    'TC-07: Malformed JSON returns HTTP 400',
+    'JSON request bodies larger than 1 MB return HTTP 413',
+    'TC-03: Unsupported HTTP method returns 404',
+    'TC-05: Each request receives a unique request ID',
+    'TC-01: Health endpoint returns HTTP 200',
+    'TC-06: Unknown route returns a structured 404 error',
+    'Sprint 1: Login requires the documented identifier contract',
+    'Sprint 1: Student tokens cannot access the question bank',
+    'attempt start requires a student and never returns the answer key',
+    'bulk and compatibility answer saves enforce ownership and are idempotent',
+    'submission freezes grading, returns the result, and safely handles concurrent retries',
+    'result percentiles use submitted attempts from the same exam and include ties',
+    'question CSV import validates every row before creating questions',
+    'a save after the deadline is rejected and finalizes and grades the attempt',
+    'the background deadline sweep submits and grades disconnected attempts while preserving saved answers',
+    'exam keeps its question version after the question bank is edited',
+    'Readiness reports ready when MongoDB is connected',
+    'audit log endpoint requires an instructor or admin',
+    'admin can filter audit logs and does not receive metadata',
+    'audit log limit is clamped to 100',
+    'locks an account after five failed logins',
+    'successful login resets failed login state',
+    'signs a token with user id, role, and expiry',
+    'rejects a token with a tampered signature',
+    'rejects an expired token',
+    'requireAuth attaches the verified user to the request',
+    'requireAuth rejects a missing bearer token with 401',
+    'requireRole blocks users with the wrong role',
+    'hashPassword creates a salted password hash',
+    'verifyPassword accepts the original password',
+    'verifyPassword rejects the wrong password',
+    'verifyPassword rejects malformed hashes',
+    'hashPassword rejects short passwords',
+    'API rate limiter returns a structured 429 after its configured request cap',
+    'API rate limiter allows 300 requests per IP in a minute by default',
+    'login rate limiter normalizes identifiers and keeps distinct accounts separate',
 ]
-if len(BACKEND_CASES) != 32:
-    raise RuntimeError("Expected exactly 32 backend test descriptions.")
+if len(BACKEND_CASES) != 38:
+    raise RuntimeError("Expected exactly 38 backend test descriptions.")
 NAVY = colors.HexColor("#17365D")
 PALE = colors.HexColor("#F1F5F9")
 GRID = colors.HexColor("#C8D0DA")
@@ -151,9 +157,9 @@ story.append(Paragraph(
     styles["SubTitle"]
 ))
 metadata = [
-    ["Report date", "15 November 2026", "Tested commit", "0ce4ad7"],
-    ["Backend command", "npm test --prefix backend -- --experimental-test-coverage",
-     "Frontend command", "npm run test:coverage --prefix frontend"],
+    ["Report date", "17 November 2026", "Backend tested commit", "62c8d45"],
+    ["Backend execution", "17 November 2026; isolated DB oep_timer_validation_20261117",
+     "Frontend evidence", "15 November 2026; commit 0ce4ad7"],
     ["Backend runtime", "Node.js built-in test runner",
      "Frontend runner", "Vitest 4.1.12"],
 ]
@@ -165,7 +171,7 @@ story.append(make_table(
 story.append(Paragraph("Execution results", styles["Section"]))
 results = [
     ["Suite", "Test files", "Executed", "Passed", "Failed", "Skipped", "Duration"],
-    ["Backend", "6", "32", "32", "0", "0", "5.26 seconds"],
+    ["Backend", "7", "38", "38", "0", "0", "8.10 seconds"],
     ["Frontend", "4", "12", "12", "0", "0", "6.08 seconds"],
 ]
 story.append(make_table(results, [
@@ -174,13 +180,15 @@ story.append(make_table(results, [
 story.append(Paragraph("Backend test-file breakdown", styles["Section"]))
 backend_files = [
     ["Backend test file", "Tests", "Frontend test file", "Tests"],
-    ["app.test.js", "9", "questionCsv.test.js", "5"],
-    ["attempt.integration.test.js", "7", "ProtectedRoute.test.jsx", "3"],
+    ["app.test.js", "10", "questionCsv.test.js", "5"],
+    ["attempt.integration.test.js", "9", "ProtectedRoute.test.jsx", "3"],
     ["auth.integration.test.js", "2", "Results.test.jsx", "3"],
-    ["jwt.test.js", "6", "QuestionBank.test.jsx", "1"],
+    ["audit.integration.test.js", "3", "", ""],
+    ["auth.integration.test.js", "2", "", ""],
+    ["jwt.test.js", "6", "", ""],
     ["password.test.js", "5", "", ""],
     ["rateLimits.test.js", "3", "", ""],
-    ["Total", "32", "Total", "12"],
+    ["Total", "38", "Total", "12"],
 ]
 story.append(make_table(
     [[P(x) for x in row] for row in backend_files],
@@ -188,8 +196,9 @@ story.append(make_table(
 ))
 story.append(Spacer(1, 3*mm))
 story.append(Paragraph(
-    "Result: all 32 backend tests and all 12 frontend tests passed in the "
-    "recorded runs. These results apply to commit 0ce4ad7.",
+    "Result: all 38 backend tests passed on 17 November 2026, commit 62c8d45. "
+    "The 12 frontend tests passed in the separately recorded 15 November 2026 run, "
+    "commit 0ce4ad7.",
     styles["BodySmall"]
 ))
 story.append(Paragraph(
@@ -204,7 +213,7 @@ story.append(PageBreak())
 story.append(Paragraph("Backend test case results", styles["Section"]))
 story.append(Paragraph(
     "Execution source: backend/backend-coverage-output.txt. "
-    "All 32 listed cases passed; no failures or skipped tests were reported.",
+    "All 38 listed cases passed; no failures or skipped tests were reported.",
     styles["BodySmall"]
 ))
 story.append(Spacer(1, 3*mm))
@@ -212,9 +221,9 @@ backend_rows = [[
     P("No.", "HeaderCell"), P("Test case", "HeaderCell"), P("Result", "HeaderCell"),
     P("No.", "HeaderCell"), P("Test case", "HeaderCell"), P("Result", "HeaderCell")
 ]]
-for i in range(16):
+for i in range(19):
     left_no = i + 1
-    right_no = i + 17
+    right_no = i + 20
     backend_rows.append([
         str(left_no),
         P(BACKEND_CASES[left_no-1], "CellSmall"),
@@ -229,9 +238,9 @@ story.append(make_table(
 ))
 story.append(Spacer(1, 4*mm))
 story.append(Paragraph(
-    "Backend test-file totals: app.test.js (9), attempt.integration.test.js (7), "
-    "auth.integration.test.js (2), jwt.test.js (6), password.test.js (5), "
-    "rateLimits.test.js (3). Total: 32.",
+    "Backend test-file totals: app.test.js (10), attempt.integration.test.js (9), "
+    "audit.integration.test.js (3), auth.integration.test.js (2), jwt.test.js (6), "
+    "password.test.js (5), rateLimits.test.js (3). Total: 38.",
     styles["BodySmall"]
 ))
 # PAGE 3 - Frontend test evidence and limitations
@@ -261,9 +270,10 @@ story.append(make_table(
 ))
 story.append(Paragraph("Execution evidence", styles["Section"]))
 evidence = [
-    ["Backend", "32 tests passed, 0 failed, 0 skipped; duration 5.26 seconds."],
-    ["Frontend", "4 test files passed; 12 tests passed; duration 6.08 seconds."],
-    ["Tested commit", "0ce4ad7."],
+    ["Backend", "38 tests passed, 0 failed, 0 skipped; duration 8.10 seconds."],
+    ["Frontend", "4 test files passed; 12 tests passed; 15 November 2026; commit 0ce4ad7."],
+    ["Tested commits", "Backend: 62c8d45 (17 November); frontend: 0ce4ad7 (15 November)."],
+    ["Backend coverage", "Lines 80.31%; branches 68.75%; functions 83.90% (17 November coverage run)."],
     ["Coverage evidence", "See the separate Combined Code and Branch Coverage Report.pdf."],
 ]
 story.append(make_table(
@@ -278,14 +288,15 @@ story.append(Paragraph(
     "does not prove every user workflow or requirement. Browser-based system "
     "validation, role-specific workflows, timer-expiry behaviour, security, "
     "sustained load, and production availability must be assessed using their "
-    "own evidence. Historical browser-validation results must retain their "
-    "original test date and must not be represented as a fresh run on commit "
-    "0ce4ad7.",
+    "own evidence. Timer-expiry worker behavior and saved-answer preservation "
+    "have automated integration coverage; real-time browser countdown and expiry "
+    "verification remain separate. Frontend results retain their original date "
+    "and commit and are not represented as a fresh run on backend commit 62c8d45.",
     styles["BodySmall"]
 ))
 doc.build(story, onFirstPage=footer, onLaterPages=footer)
 print(f"Created: {OUTPUT}")
-print("Backend tests: 32 passed, 0 failed")
+print("Backend tests: 38 passed, 0 failed")
 print("Frontend tests: 12 passed, 0 failed")
-print("Tested commit: 0ce4ad7")
+print("Backend commit: 62c8d45; frontend evidence commit: 0ce4ad7")
 print("Pages: summary, backend case results, frontend evidence")

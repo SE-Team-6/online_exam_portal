@@ -2,31 +2,41 @@
 **Project:** Online Exam Portal
 **Team:** 6
 **Prepared by:** Test Engineer
-**Report date:** 15 November 2026
+**Report date:** 17 November 2026
 **Report status:** Updated interim QA report — not final release sign-off
 ## 1. Purpose
 This report summarizes the available automated, API, frontend, manual browser, and performance test evidence. It distinguishes historical executions from the latest retests and does not claim that all planned requirements have passed.
 ## 2. Latest automated test execution
-**Tested repository commit:** `0ce4ad7`
+**Tested source commits:** Backend `62c8d45` (17 November 2026); frontend `0ce4ad7` (15 November 2026).
 ### 2.1 Backend
-**Execution date:** 15 November 2026
+**Execution date:** 17 November 2026
+**Tested source commit:** `62c8d45`
+**Database:** `oep_timer_validation_20261117`
+**Test runner:** Node.js built-in test runner
 | Metric | Result |
 |---|---:|
-| Tests executed | 32 |
-| Passed | 32 |
+| Test files | 7 |
+| Tests executed | 38 |
+| Passed | 38 |
 | Failed | 0 |
 | Skipped | 0 |
 | Result | PASS |
-The backend suite covers health and HTTP behavior, request IDs, authentication, account lockout, JWT validation, password hashing, authorization, exam attempts, answer saving, submission, grading, result percentiles, CSV import, deadlines, and rate limiting.
+| Recorded duration | 8.10 seconds |
+The suite covers health and HTTP behavior, request IDs, authentication, account lockout, JWT validation, password hashing, authorization, exam attempts, answer saving, submission, grading, result percentiles, CSV import, question versioning, audit logs, rate limiting, and automatic expiry handling.
+The strengthened background-expiry test saves an answer before expiry and verifies that the saved answer remains present after automatic submission and grading.
+
 ### 2.2 Backend coverage
+**Execution date:** 17 November 2026
+**Tested source commit:** `62c8d45`
 Node.js native test coverage:
 | Metric | Coverage |
 |---|---:|
-| Lines | 76.76% |
-| Branches | 70.06% |
-| Functions | 77.27% |
+| Lines | 80.31% |
+| Branches | 68.75% |
+| Functions | 83.90% |
 | Statements | Not reported as an aggregate by this native coverage output |
-These figures apply to the backend test run only.
+These figures apply to the latest backend coverage run only. Frontend coverage is reported separately because it comes from an earlier, separate test run.
+
 ### 2.3 Frontend
 **Execution date:** 15 November 2026
 **Test runner:** Vitest 4.1.12
@@ -105,7 +115,21 @@ The historical 404 result remains in the Sprint 2 record. Do not close defect #5
 **Current browser result:** 12 checks passed, 0 failed, for the documented student workflow on commit `0ce4ad7`.
 The browser run used the separate local database `oep_system_validation_20261115`; the original `online_exam_portal` database was not selected for this run. The seed data contained one student attempt. Therefore, the displayed 100th percentile is an observation for a single-attempt dataset and does not establish percentile behaviour across a larger cohort.
 A visual consistency observation was recorded: the Student Exam page appeared less styled than the dashboard, although the tested controls and workflow functioned. This is a UI observation, not a failed functional check.
-The current browser run does not cover registration, administrator or instructor workflows, timer expiry and automatic submission, or broader cohort-percentile behaviour. The earlier November 10 browser evidence remains historical and is not included in the current 12-check result.
+The November 15 browser run does not cover registration, administrator or instructor workflows, timer expiry, or broader cohort-percentile behaviour. Separate backend integration evidence for automatic expiry and saved-answer preservation is recorded in Section 4.3. The live browser countdown reaching zero remains unverified. The November 10 browser evidence remains historical and is not included in the current 12-check result.
+### 4.3 Automatic expiry and submission integration verification
+**Execution date:** 17 November 2026
+**Tested source commit:** `62c8d45`
+**Isolated database:** `oep_timer_validation_20261117`
+| Validation | Result |
+|---|---|
+| Late answer save after expiry | PASS ? HTTP 409 `ATTEMPT_EXPIRED`; attempt finalized and graded. |
+| Background deadline sweep | PASS ? expired disconnected attempt automatically submitted and graded. |
+| Saved-answer preservation | PASS ? Option A, saved before expiry, remained in the finalized attempt. |
+| Submission timestamp | PASS ? `submittedAt` matched the simulated expiry deadline. |
+| Result generation | PASS ? a result record was created. |
+Both targeted expiry tests passed (2/2). The full `attempt.integration.test.js` suite passed (9/9), and the complete backend suite passed (38/38).
+The tests invoke `autoSubmitExpiredAttempts()` directly after setting the test attempt's expiry into the past. Code inspection confirms that `backend/src/server.js` runs an initial expiry sweep and schedules subsequent sweeps every five seconds. The live interval firing and a real browser countdown reaching zero have not been independently verified end to end.
+
 ## 5. Performance evidence
 **Test date:** 15 November 2026
 **Tested repository commit:** 882cfd1
@@ -131,7 +155,7 @@ Requirement coverage is not calculated as a single percentage because the comple
 The following areas require additional evidence or remain unverified:
 - Student registration remains untested. One valid seeded-student login and the documented student exam workflow passed in the November 15 browser run; this does not establish every authentication scenario.
 - Full exam scheduling and all student exam workflow variants; one seeded student sample-exam workflow was validated on 15 November 2026.
-- Timer expiry and automatic submission in required scenarios; the November 15 exam was submitted manually before timeout.
+- Backend automatic-expiry and saved-answer integration tests passed on 17 November 2026. Live browser countdown expiry and scheduler-triggered submission remain unverified end to end.
 - Full instructor and administrator workflows.
 - Production HTTPS/TLS configuration and verification.
 - Production password-storage and security configuration.

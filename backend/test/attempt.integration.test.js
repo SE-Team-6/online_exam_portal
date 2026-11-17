@@ -462,20 +462,36 @@ test("a save after the deadline is rejected and finalizes and grades the attempt
   assert.equal(result.maxScore, 2);
 });
 
-test("the background deadline sweep submits and grades disconnected attempts", async () => {
-  const { exam } = await createExamFixture();
+test("the background deadline sweep submits and grades disconnected attempts while preserving saved answers", async () => {
+  const { exam, questions } = await createExamFixture();
   const { body: attempt } = await startCanonicalAttempt(exam._id.toString());
+  const saveResponse = await request(
+    `/api/attempts/${attempt.attemptId}/answers/${questions[0]._id}`,
+    {
+      token: studentToken,
+      method: "PUT",
+      body: { selectedOptionId: "A" },
+    }
+  );
+  assert.equal(saveResponse.status, 200);
   const expiredAt = new Date(Date.now() - 3_000);
-  await Attempt.updateOne({ _id: attempt.attemptId }, { $set: { expiresAt: expiredAt } });
-
+  await Attempt.updateOne(
+    { _id: attempt.attemptId },
+    { $set: { expiresAt: expiredAt } }
+  );
   assert.equal(await autoSubmitExpiredAttempts(new Date()), 1);
-
   const finalized = await Attempt.findById(attempt.attemptId).lean();
   const result = await Result.findOne({ attemptId: attempt.attemptId }).lean();
   assert.equal(finalized.status, "submitted");
   assert.equal(finalized.submittedAt.toISOString(), expiredAt.toISOString());
-  assert.equal(result.score, 0);
+  const savedAnswer = finalized.answers.find(
+    (answer) => String(answer.questionId) === String(questions[0]._id)
+  );
+  assert.ok(savedAnswer);
+  assert.equal(savedAnswer.selectedOptionId, "A");
+  assert.ok(result);
   assert.equal(result.maxScore, 2);
+  assert.ok(Number.isFinite(result.score));
 });
 
 test("exam keeps its question version after the question bank is edited", async () => {
